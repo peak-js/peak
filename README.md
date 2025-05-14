@@ -3,25 +3,26 @@
 Easy reactive web framework with no setup required
 
 ```html
-<!-- components/x-counter.html -->
-
 <template>
-  <button @click="increment"> 
-    <span x-text="count"></span>
-  </button>
+  <button @click="greet">Click</button>
 </template>
 
 <script>
-export default class {
-  increment() {
-    this.count = this.count|0 + 1
+  export default class {
+    increment() {
+      alert('Welcome to Peak.js!')
+    }
   }
-}
 </script>
+
+<style>
+  button { font-size: large }
+</style>
 ```
 
 ## Features
 
+- Reactive web framework 
 - No build step necessary
 - Reusable single-file components
 - Powered by Alpine.js and web components
@@ -33,30 +34,35 @@ export default class {
 Components are defined in plain HTML files, with each file having a `<template>`, an optional `<script>`, and optional `<style>`.
 
 ```html
-<!-- /components/x-greeter-button.html -->
+<!-- /components/x-counter.html -->
+
 <template>
-  <!-- html goes here -->
-  <button @click="greet"></button>
+  <button @click="increment">
+    <span x-text="count"></span>
+  </button>
 </template>
 
 <script>
-export default class {
-  /* javascript goes in here */
-  greet() {
-    alert('Hello!')
+  export default class {
+    init() {
+      this.count = 0
+    }
+    increment() {
+      this.count++
+    }
   }
-}
 </script>
 
 <style>
-  /* css goes in here */
-  button { background: cyan }
+  button:active {
+    filter: invert(1);
+  }
 </style>
 ```
 
-Register components in order to use them in the DOM:
+Register components and use them directly:
 
-```
+```html
 <!-- index.html -->
 
 <x-greeter-button></x-greeter-button>
@@ -68,6 +74,8 @@ Register components in order to use them in the DOM:
 ```
 
 ## Templates
+
+Templates are powered by [Alpine.js](https://alpinejs.dev), so that all applies here
 
 #### x-if
 
@@ -124,9 +132,6 @@ Refer to an HTML element via `$refs`
 <button @click="$refs.searchInput.focus()">Search</button>
 ```
 
-> Peak.js is powered by [Alpine.js](https://alpinejs.dev/), so all that applies here
-
-
 ## Lifecycle methods
 
 In the `<script>` tag, `export default` a class, which may define `init()` and `destroy()` methods:
@@ -156,11 +161,11 @@ export default class {
 </script>
 ```
 
-
 ## Computed properties
 
 Use instance getters for display formatting, and other derived properties
 
+```html
 <template>
   <div x-text="formattedTime"></div>
 </template>
@@ -175,7 +180,7 @@ export default class {
   }
 }
 </script>
-
+```
 
 ## Style
 
