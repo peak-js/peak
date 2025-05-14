@@ -9,7 +9,7 @@ Easy reactive web framework with no setup required, powered by [Alpine.js](https
 
 <script>
   export default class {
-    increment() {
+    greet() {
       alert('Welcome to Peak.js!')
     }
   }
