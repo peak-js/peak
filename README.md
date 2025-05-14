@@ -1,6 +1,6 @@
 # Peak.js
 
-Easy reactive web framework with no setup required
+Easy reactive web framework with no setup required, powered by [Alpine.js](https://alpinejs.dev)
 
 ```html
 <template>
@@ -74,8 +74,6 @@ Register components and use them directly:
 ```
 
 ## Templates
-
-Templates are powered by [Alpine.js](https://alpinejs.dev), so that all applies here
 
 #### x-if
 
