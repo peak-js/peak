@@ -34,7 +34,7 @@ Easy reactive web framework with no setup required, powered by [Alpine.js](https
 Components are defined in plain HTML files, with each file having a `<template>`, an optional `<script>`, and optional `<style>`.
 
 ```html
-<!-- /components/x-counter.html -->
+<!-- components/x-counter.html -->
 
 <template>
   <button @click="increment">
@@ -201,10 +201,13 @@ Styles defined in the component are scoped to the component — they won't leak 
 Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API
 
 ```javascript
-import { router } from 'peak'
+import { router, component } from 'peak'
 
-router.route('/', '/views/home.html')
-router.route('/about', '/views/about.html')
+router.route('/', 'x-home-view')
+router.route('/about', 'x-about-view')
+
+component('x-home-view', '/views/x-home-view.html')
+component('x-about-view', '/views/x-about-view.html')
 ```
 
 
