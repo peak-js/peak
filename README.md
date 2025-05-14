@@ -65,11 +65,11 @@ Register components and use them directly:
 ```html
 <!-- index.html -->
 
-<x-greeter-button></x-greeter-button>
+<x-counter></x-counter>
 
 <script type="module">
   import { component } from '/vendor/peak.js'
-  component('x-greeter-button', '/components/x-greeter-button.html')
+  component('x-counter', '/components/x-counter.html')
 </script>
 ```
 
