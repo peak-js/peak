@@ -182,7 +182,7 @@ export default class {
 
 ## Style
 
-Styles defined in the component are scoped to the component -- they won't leak up to ancestor elements, nor down into nested components.
+Styles defined in the component are scoped to the component — they won't leak up to ancestor elements, nor down into nested components.
 
 ```html
 <template>
@@ -190,8 +190,9 @@ Styles defined in the component are scoped to the component -- they won't leak u
   <p>This text in red won't leak to other components</p>
   <x-body></x-body>
 </template>
+
 <style>
-  p { color: magenta }
+  p { color: red }
 </style>
 ```
 
