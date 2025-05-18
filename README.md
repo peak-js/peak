@@ -200,14 +200,24 @@ Styles defined in the component are scoped to the component — they won't leak 
 
 Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API
 
-```javascript
-import { router, component } from 'peak'
+```html
+<a href="/">HOME</a>
+<a href="/about">ABOUT</a>
 
-router.route('/', 'x-home-view')
-router.route('/about', 'x-about-view')
+<x-router-view></x-router-view>
 
-component('x-home-view', '/views/x-home-view.html')
-component('x-about-view', '/views/x-about-view.html')
+<script type="module">
+  import { router, component } from 'peak'
+
+  router.route('/', 'x-home-view')
+  router.route('/about', 'x-about-view')
+
+  component('x-home-view', '/views/x-home-view.html')
+  component('x-about-view', '/views/x-about-view.html')
+
+  router.on('navigation', e => console.log(e))
+  router.on('notFound', e => console.warn(e))
+</script>
 ```
 
 
