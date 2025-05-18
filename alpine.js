@@ -3050,10 +3050,12 @@ directive("data", (el, { expression }, { cleanup: cleanup2 }) => {
   let undo = addScopeToNode(el, reactiveData);
   if (!el._x_data_init) {
     el._x_data_init = true;
-    reactiveData["init"] && evaluate(el, reactiveData["init"]);
+    //reactiveData["init"] && evaluate(el, reactiveData["init"]);
+    if (reactiveData['init']) reactiveData['init']();
   }
   cleanup2(() => {
-    reactiveData["destroy"] && evaluate(el, reactiveData["destroy"]);
+    //reactiveData["destroy"] && evaluate(el, reactiveData["destroy"]);
+    reactiveData['destroy'] && reactiveData['destroy']();
     undo();
   });
 });
