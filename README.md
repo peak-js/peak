@@ -201,8 +201,10 @@ Styles defined in the component are scoped to the component — they won't leak 
 Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API
 
 ```html
-<a href="/">HOME</a>
-<a href="/about">ABOUT</a>
+<nav>
+  <a href="/">HOME</a>
+  <a href="/about">ABOUT</a>
+</nav>
 
 <x-router-view></x-router-view>
 
