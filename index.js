@@ -40,9 +40,9 @@ export const component = async (tagName, path) => {
   const _class = await loadModule(script, path)
 
   const key = tagName.replace(/\W/g, '_')
-  console.log("DATA", key)
+
   Alpine.data(key, () => {
-    const instance = new _class
+    const instance = new (_class || new Function)
     return instance
   })
 
@@ -55,6 +55,7 @@ export const component = async (tagName, path) => {
   }
 
   customElements.define(tagName, _constructor)
+
   const scopedStyle = `
     <style>
       @layer ${tagName} {
@@ -113,15 +114,13 @@ class routerView extends HTMLElement {
       _replaceState.apply(history, args)
       this.route()
     }
-    this.route()
+    addEventListener('load', _ => this.route())
+    addEventListener('popstate', _ => this.route())
+    addEventListener('click', this.handleClick.bind(this))
   }
 }
 
 customElements.define('x-router-view', routerView)
-
-window.addEventListener('load', _ => {
-  //Alpine.start()
-})
 
 async function loadModule(source='', url) {
   const baseUrl = new URL(url, window.location.href).href;
@@ -174,6 +173,3 @@ async function loadModule(source='', url) {
   const factory = new Function(...injectedVars, rewrittenSource);
   return factory(...injectedValues);
 }
-
-export const html = String.raw
-export const css = String.raw
