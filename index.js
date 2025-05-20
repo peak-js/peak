@@ -8,15 +8,27 @@ export const store = Alpine.store('global')
 
 export const route = {}
 
-export const router = {
+export const router = Object.assign(new EventTarget, {
   _route: route,
   routes: [],
   route(pattern, tagName) {
     const params = []
-    const regex = new RegExp('^' + pattern.replace(/\/:([^\/]+)/g, (_, key) => params.push(key) && '/([^/]+)') + '$');
+    const regex = new RegExp('^' + pattern.replace(/\/:([^\/]+)/g, (_, key) => params.push(key) && '/([^/]+)') + '$')
     this.routes.push({ pattern, tagName, regex, params })
+  },
+  push(url, state={}) {
+    history.pushState(state, "", url)
+  },
+  replace(url, state={}) {
+    history.replaceState(state, "", url)
+  },
+  emit(name, detail) {
+    this.dispatchEvent(new CustomEvent(name, { detail }))
+  },
+  on(name, handler) {
+    return this.addEventListener(name, handler)
   }
-}
+})
 
 export const component = async (tagName, path) => {
 
@@ -68,12 +80,27 @@ class routerView extends HTMLElement {
   }
   route() {
     const { route, params } = this.match() || {}
+    if (!route) {
+      console.warn("[peak] no route found:", window.location.pathname)
+      router.emit('notFound', { url: window.location.pathname })
+      return
+    }
     const query = Object.fromEntries(new URLSearchParams(location.search));
-    if (!route) return
     const { tagName } = route
     for (let k in router._route) delete router.route[k]
-    Object.assign(router._route, route, { params, query })
+    Object.assign(router._route, route, { params, query, path: location.pathname })
     this.innerHTML = `<${tagName}></${tagName}>`
+    router.emit('navigation', { url: window.location.pathname })
+  }
+  handleClick(e) {
+    const anchor = e.target.closest('a')
+    if (!anchor || anchor.target === '_blank') return
+    const url = anchor.getAttribute('href')
+    if (!url) return
+    if (url.match(/^(http|\/\/|#)/)) return
+    if (!this.match(url)) return
+    e.preventDefault()
+    router.push(url)
   }
   connectedCallback() {
     const _pushState = history.pushState
