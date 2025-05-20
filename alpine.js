@@ -3326,39 +3326,125 @@ handler3.inline = (el, { expression }, { cleanup: cleanup2 }) => {
 directive("ref", handler3);
 
 // packages/alpinejs/src/directives/x-if.js
+directive("else-if", (el, { expression }, { effect: effect3, cleanup: cleanup2 }) => {
+  if (el.tagName.toLowerCase() !== "template")
+    warn("x-else-if can only be used on a <template> tag", el);
+  let prev = el.previousElementSibling;
+  if (!prev || prev.tagName.toLowerCase() !== "template" || !prev.hasAttribute("x-if") && !prev.hasAttribute("x-else-if")) {
+    warn("x-else-if must be preceded by an x-if or x-else-if template element", el);
+  }
+});
+directive("else", (el, { expression }, { effect: effect3, cleanup: cleanup2 }) => {
+  if (el.tagName.toLowerCase() !== "template")
+    warn("x-else can only be used on a <template> tag", el);
+  let prev = el.previousElementSibling;
+  if (!prev || prev.tagName.toLowerCase() !== "template" || !prev.hasAttribute("x-if") && !prev.hasAttribute("x-else-if")) {
+    warn("x-else must be preceded by an x-if or x-else-if template element", el);
+  }
+});
 directive("if", (el, { expression }, { effect: effect3, cleanup: cleanup2 }) => {
   if (el.tagName.toLowerCase() !== "template")
     warn("x-if can only be used on a <template> tag", el);
   let evaluate2 = evaluateLater(el, expression);
-  let show = () => {
-    if (el._x_currentIfEl)
-      return el._x_currentIfEl;
-    let clone2 = el.content.cloneNode(true).firstElementChild;
-    addScopeToNode(clone2, {}, el);
+  let elseIfEls = [];
+  let elseEl = null;
+  let currentEl = el.nextElementSibling;
+  while (currentEl) {
+    if (currentEl.tagName.toLowerCase() === "template") {
+      if (currentEl.hasAttribute("x-else-if")) {
+        elseIfEls.push(currentEl);
+      } else if (currentEl.hasAttribute("x-else")) {
+        elseEl = currentEl;
+        break;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+    currentEl = currentEl.nextElementSibling;
+  }
+  let elseIfEvaluators = elseIfEls.map((elseIfEl) => {
+    let expression2 = elseIfEl.getAttribute("x-else-if");
+    return evaluateLater(elseIfEl, expression2);
+  });
+  let currentlyShownBranch = null;
+  let hideAll = () => {
+    if (el._x_undoIf) {
+      el._x_undoIf();
+      delete el._x_undoIf;
+    }
+    elseIfEls.forEach((elseIfEl) => {
+      if (elseIfEl._x_undoIf) {
+        elseIfEl._x_undoIf();
+        delete elseIfEl._x_undoIf;
+      }
+    });
+    if (elseEl && elseEl._x_undoIf) {
+      elseEl._x_undoIf();
+      delete elseEl._x_undoIf;
+    }
+    currentlyShownBranch = null;
+  };
+  let showBranch = (branchEl) => {
+    if (branchEl._x_currentIfEl)
+      return branchEl._x_currentIfEl;
+    let clone2 = branchEl.content.cloneNode(true).firstElementChild;
+    addScopeToNode(clone2, {}, branchEl);
     mutateDom(() => {
-      el.after(clone2);
+      branchEl.after(clone2);
       skipDuringClone(() => initTree(clone2))();
     });
-    el._x_currentIfEl = clone2;
-    el._x_undoIf = () => {
+    branchEl._x_currentIfEl = clone2;
+    branchEl._x_undoIf = () => {
       mutateDom(() => {
         destroyTree(clone2);
         clone2.remove();
       });
-      delete el._x_currentIfEl;
+      delete branchEl._x_currentIfEl;
     };
     return clone2;
   };
-  let hide = () => {
-    if (!el._x_undoIf)
-      return;
-    el._x_undoIf();
-    delete el._x_undoIf;
+  let evaluateChain = () => {
+    let previousBranch = currentlyShownBranch;
+    currentlyShownBranch = null;
+    evaluate2((ifValue) => {
+      if (ifValue) {
+        currentlyShownBranch = el;
+      }
+      if (!currentlyShownBranch) {
+        for (let i = 0; i < elseIfEls.length; i++) {
+          if (currentlyShownBranch)
+            break;
+          const elseIfEl = elseIfEls[i];
+          const elseIfEvaluator = elseIfEvaluators[i];
+          try {
+            elseIfEvaluator((elseIfValue) => {
+              if (elseIfValue && !currentlyShownBranch) {
+                currentlyShownBranch = elseIfEl;
+              }
+            });
+          } catch (error2) {
+            console.error("Error evaluating x-else-if expression:", error2);
+          }
+        }
+      }
+      if (!currentlyShownBranch && elseEl) {
+        currentlyShownBranch = elseEl;
+      }
+      if (previousBranch !== currentlyShownBranch) {
+        if (previousBranch && previousBranch._x_undoIf) {
+          previousBranch._x_undoIf();
+          delete previousBranch._x_undoIf;
+        }
+        if (currentlyShownBranch) {
+          showBranch(currentlyShownBranch);
+        }
+      }
+    });
   };
-  effect3(() => evaluate2((value) => {
-    value ? show() : hide();
-  }));
-  cleanup2(() => el._x_undoIf && el._x_undoIf());
+  effect3(() => evaluateChain());
+  cleanup2(() => hideAll());
 });
 
 // packages/alpinejs/src/directives/x-id.js

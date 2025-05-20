@@ -80,12 +80,24 @@ Register components and use them directly:
 Conditionally render a block
 
 ```html
-<div x-if="loading">
+<template x-if="loading">
   <img src="spinner.svg">
-</div>
+</template>
 ```
 
-> Note that there is no `x-else-if` or `x-else`
+Also available are `x-if-else` and `x-else`
+
+```html
+<template x-if="loading">
+  <img src="spinner.svg">
+</template>
+<template x-else-if="error">
+  <img src="error.svg">
+</template>
+<template x-else>
+  <x-content></x-content>
+</template>
+```
 
 #### x-for
 
