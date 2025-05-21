@@ -91,9 +91,11 @@ Also available are `x-if-else` and `x-else`
 <template x-if="loading">
   <img src="spinner.svg">
 </template>
+
 <template x-else-if="error">
   <img src="error.svg">
 </template>
+
 <template x-else>
   <x-content></x-content>
 </template>
@@ -128,6 +130,8 @@ Set the HTML content of an element
 ```
 
 #### x-show
+
+Set the visibility of an element
 
 ```html
 <div x-show="open">Content...</div>
