@@ -59,7 +59,9 @@ export const component = async (tagName, path) => {
   const scopedStyle = `
     <style>
       @layer ${tagName} {
-        ${style};
+        ${tagName} {
+          ${style};
+        }
         ${tagName} [x-data],
         ${tagName} [x-data] * {
           all: revert-layer;
