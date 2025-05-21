@@ -1,0 +1,82 @@
+<template>
+  <div class="card">
+    <h1>todos</h1>
+    <form class="add-item" @submit="addItem">
+      <input x-ref="input" name="title" type="text" placeholder="What needs doing?">
+    </form>
+    <div class="items">
+      <template x-for="item in items" :key="item.id">
+        <x-list-item :item="item"></x-list-item>
+      </template>
+    </div>
+    <footer class="flex space-between mt-24">
+      <span class="text-14" x-text="`${items.length} items`"></span>
+      <span>
+        <template x-for="label in labels">
+          <button
+            :class="filter == label && 'selected'"
+            class="mx-2"
+            @click="setFilter"
+            :data-filter="label"
+            x-text="label"
+          ></button>
+        </template>
+      </span>
+      <button class="flat" @click="clearCompleted">Clear completed</button>
+    </footer>
+  </div>
+  <footer class="mt-24 muted text-center">
+    <a href="/about.html">About</a>
+  </footer>
+</template>
+
+<script>
+import { store } from '../store.js'
+
+export default class {
+  addItem(e) {
+    e.preventDefault()
+    store.addItem(this.$refs.input.value)
+    this.$refs.input.value = ''
+    this.$refs.input.focus()
+    if (store.filter == 'completed') {
+      store.setFilter('all')
+    }
+  }
+  get items() {
+    return store.getFilteredItems()
+  }
+  get filter() {
+    return store.filter
+  }
+  get labels() {
+    return ['all', 'active', 'completed']
+  }
+  setFilter(e) {
+    store.setFilter(e.target.dataset.filter)
+  }
+  clearCompleted() {
+    store.clearCompleted()
+  }
+}
+</script>
+
+<style>
+h1 {
+  margin: 0 0 16px;
+}
+input {
+  padding: 6px 8px;
+  width: 100%;
+  border-radius: 3px;
+  border: 1px solid #0004;
+}
+button.selected {
+  filter: invert(1);
+}
+footer a {
+  text-decoration: none;
+  color: #444;
+  font-size: 14px;
+}
+</style>

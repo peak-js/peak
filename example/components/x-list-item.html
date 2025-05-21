@@ -1,0 +1,76 @@
+<template>
+  <div class="todo-item">
+    <input type="checkbox" @click="done" :checked="Boolean(item.done)">
+    <div class="flex-1">
+      <div class="contents" x-show="editing">
+        <form @submit="save" class="title contents">
+          <input x-ref="input" type="text" @blur="save" :value="item.title">
+        </form>
+      </div>
+      <div class="contents" x-show="!editing">
+        <span class="title" @click="edit" x-text="item?.title"></span>
+      </div>
+    </div>
+    <div class="status">
+      <span x-text="status">
+    </div>
+    <button class="ml-auto" title="Remove" @click="remove">&times;</button>
+  </div>
+</template>
+
+<script>
+import { store } from '../store.js'
+
+export default class {
+  get status() {
+    return this.item.done ? 'completed' : 'active'
+  }
+  init() {
+    this.editing = false
+    document.addEventListener('click', this.cancel)
+  }
+  async edit(e) {
+    e.preventDefault()
+    this.editing = true
+    setTimeout(_ => this.$refs.input.focus())
+  }
+  save(e) {
+    e.preventDefault()
+    this.editing = false
+    store.setItem(this.item, { title: this.$refs.input.value })
+  }
+  remove(e) {
+    store.removeItem(this.item)
+  }
+  done(e) {
+    store.setItem(this.item, { done: e.target.checked })
+  }
+}
+</script>
+
+<style>
+.status {
+  font-size: 12px;
+  width: 5em;
+  opacity: 0.5;
+  text-align: right;
+  margin-right: 8px;
+}
+.todo-item {
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+.contents {
+  display: contents;
+}
+.flex {
+  display: flex;
+}
+.flex-1 {
+  flex: 1;
+}
+</style>
+

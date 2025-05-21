@@ -1,0 +1,41 @@
+body {
+  background: #eee;
+  font-family: Roboto, sans-serif;
+}
+.mx-2 {
+  margin-left: 2px;
+  margin-right: 2px;
+}
+.mt-16 {
+  margin-top: 16px;
+}
+button.flat {
+  background: none;
+  border: none;
+}
+.text-14 {
+  font-size: 14px;
+}
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0002;
+  margin: 24px auto;
+  max-width: 425px;
+  padding: 24px;
+}
+.muted {
+  opacity: 0.5;
+}
+.text-center {
+  text-align: center;
+}
+.mt-24 {
+  margin-top: 24px;
+}
+.space-between {
+  justify-content: space-between;
+}
+.flex {
+  display: flex;
+}
