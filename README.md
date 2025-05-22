@@ -75,7 +75,7 @@ Register components and use them directly:
 
 ## Templates
 
-#### x-if
+### x-if
 
 Conditionally render a block
 
@@ -101,7 +101,7 @@ Also available are `x-if-else` and `x-else`
 </template>
 ```
 
-#### x-for
+### x-for
 
 Render some HTML for each item in an array
 
@@ -113,7 +113,7 @@ Render some HTML for each item in an array
 </ul>
 ```
 
-#### x-text
+### x-text
 
 Set the text content of an element
 
@@ -121,7 +121,7 @@ Set the text content of an element
 <span x-text="`Hello, ${name}`"></span>
 ```
 
-#### x-html
+### x-html
 
 Set the HTML content of an element
 
@@ -129,7 +129,7 @@ Set the HTML content of an element
 <div x-html="markdown.render('# Page title')"></div>
 ```
 
-#### x-show
+### x-show
 
 Set the visibility of an element
 
@@ -137,7 +137,7 @@ Set the visibility of an element
 <div x-show="open">Content...</div>
 ```
 
-#### x-ref
+### x-ref
 
 Refer to an HTML element via `$refs`
 
@@ -148,19 +148,11 @@ Refer to an HTML element via `$refs`
 
 ## Component methods
 
-#### Lifecycle: `init()` and `destroy()`
+### init() 
 
-In the `<script>` tag, `export default` a class, which may define `init()` and `destroy()` methods:
+Run initialization code when the component is mounted
 
 ```html
-<template>
-  <h2>Feed</h2
-  <template x-for="item in items">
-    <h4 x-text="item.title"><h4>
-    <div x-text="item.body"></div>
-  </template>
-</template>
-
 <script>
 export default class {
   init() {
@@ -168,6 +160,20 @@ export default class {
     this.pollerId = setInterval(_ => {
       this.items = fetch('/feed')
     }, 30_000)
+  }
+}
+</script>
+```
+
+### destroy()
+
+Run teardown code when the component is to be destroyed
+
+```html
+<script>
+export default class {
+  init() {
+    // ...
   }
   destroy() {
     // clean up when the component is destroyed
@@ -177,7 +183,7 @@ export default class {
 </script>
 ```
 
-#### Watchers: `$watch()`
+### $watch()
 
 Run methods when reactive data changes
 
@@ -198,7 +204,7 @@ export default class {
 </script>
 ```
 
-#### Emit events: `$dispatch()`
+### $dispatch()
 
 Emit events that bubble up to parent components
 
