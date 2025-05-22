@@ -146,7 +146,9 @@ Refer to an HTML element via `$refs`
 <button @click="$refs.searchInput.focus()">Search</button>
 ```
 
-## Lifecycle methods
+## Component methods
+
+#### Lifecycle: `init()` and `destroy()`
 
 In the `<script>` tag, `export default` a class, which may define `init()` and `destroy()` methods:
 
@@ -173,6 +175,37 @@ export default class {
   }
 }
 </script>
+```
+
+#### Watchers: `$watch()`
+
+Run methods when reactive data changes
+
+```html
+<template>
+  <button @click="count++">
+</template>
+
+<script>
+export default class {
+  init() {
+    this.count = 0
+    this.$watch('count', value => {
+      console.log("count is now", value)
+    })
+  }
+}
+</script>
+```
+
+#### Emit events: `$dispatch()`
+
+Emit events that bubble up to parent components
+
+```html
+<template>
+  <input @input="$dispatch('change')">
+</template>
 ```
 
 ## Computed properties
