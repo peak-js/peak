@@ -42,20 +42,40 @@ export const component = async (tagName, path) => {
   class _constructor extends HTMLElement {
     constructor() {
       super()
+      this._state = Object.create(null)
       this.created?.()
     }
     connectedCallback() {
+      for (const key of Object.keys(this)) {
+        this._defineReactiveProperty(key, this[key])
+      }
       this.render()
       this.mounted?.()
     }
     render() {
       morph(this, render(template, this))
     }
+    _defineReactiveProperty(prop, initialValue) {
+      if ((prop in this._state) || prop == '_state') return
+
+      this._state[prop] = initialValue
+
+      Object.defineProperty(this, prop, {
+        configurable: true,
+        enumerable: true,
+        get: () => this._state[prop],
+        set: (val) => {
+          this._state[prop] = val;
+          this.render();
+        }
+      })
+    }
   }
 
   Object.getOwnPropertyNames(_class.prototype)
     .filter(n => n != 'constructor')
-    .forEach(n => _constructor.prototype[n] = _class.prototype[n]);
+    .forEach(n => Object.defineProperty(_constructor.prototype, n,
+      Object.getOwnPropertyDescriptor(_class.prototype, n)))
 
   customElements.define(tagName, _constructor)
 
@@ -189,6 +209,13 @@ function render(template, ctx) {
       el.innerHTML = evalInContext(ctx, el.getAttribute('x-html'))
       el.removeAttribute('x-html')
     }
+    if (el.hasAttribute('x-if')) {
+      const shouldRender = evalInContext(ctx, el.getAttribute('x-if'))
+      if (!shouldRender) return el.remove()
+    }
+    if (el.hasAttribute('x-for')) {
+       // claude, fill this in here
+    }
     for (const a of el.attributes || []) {
       if (a.name.startsWith(':')) {
         el.setAttribute(a.name.slice(1), evalInContext(ctx, a.value))
@@ -266,7 +293,7 @@ function evalInContext(element, code, ...args) {
   const wrappedCode = code.replace(
     /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
     (match, identifier) => {
-      const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'console', 'window', 'document', 'JSON', 'Promise', 'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 'finally', 'throw', 'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super', 'this' ]
+      const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'console', 'window', 'document', 'JSON', 'Promise', 'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 'finally', 'throw', 'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super', 'this', 'event' ]
       if (keywords.includes(identifier)) return match
       return `this.${identifier}`
     }
