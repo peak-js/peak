@@ -1,25 +1,10 @@
-<link href="style.css" rel="stylesheet">
-
-<x-router-view></x-router-view>
+<x-counter></x-counter>
 
 <script type="module">
 
-import { store } from './store.js'
-import { component, router } from './peak.js'
+import { component } from './peak.js'
 
-window.router = router
-store.initialize()
-
-component('x-app-view', 'views/x-app-view.html')
-component('x-about-view', 'views/x-about-view.html')
-
-component('x-list-item', 'components/x-list-item.html')
-
-router.route('/', 'x-app-view')
-router.route('/about.html', 'x-about-view')
-
-router.on('navigation', (route) => console.log('navigation', route))
-router.on('notFound', (route) => console.log('not-found', route))
+component('x-counter', 'components/x-counter.html')
 
 </script>
 

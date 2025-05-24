@@ -1,0 +1,21 @@
+<template>
+  <button @click="increment" x-text="count"></button>
+</template>
+
+<script>
+export default class {
+  increment() {
+    console.log("INCREMENT")
+    this.count++
+    this.render()
+  }
+  created() {
+    this.count = 0
+    console.log("CREATED")
+    window.x = this
+  }
+  mounted() {
+    console.log("MOUNTED")
+  }
+}
+</script>
