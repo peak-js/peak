@@ -1,6 +1,6 @@
 # Peak.js
 
-Easy reactive web framework with no setup required, powered by [Alpine.js](https://alpinejs.dev)
+Easy reactive web framework with no setup required
 
 ```html
 <template>
@@ -80,9 +80,7 @@ Register components and use them directly:
 Conditionally render a block
 
 ```html
-<template x-if="loading">
-  <img src="spinner.svg">
-</template>
+<img x-if="loading" src="spinner.svg">
 ```
 
 Also available are `x-if-else` and `x-else`
@@ -107,9 +105,9 @@ Render some HTML for each item in an array
 
 ```html
 <ul>
-  <template x-for="item in items">
-    <li x-text="item.title">
-  </template>
+  <li x-for="item in items">
+    <span x-text="item.title"></span>
+  </li>
 </ul>
 ```
 
@@ -148,9 +146,13 @@ Refer to an HTML element via `$refs`
 
 ## Component methods
 
-### init() 
+### created()
 
-Run initialization code when the component is mounted
+Run code when the component is created but not yet rendered
+
+### mounted() 
+
+Run code when the component is mounted
 
 ```html
 <script>
@@ -165,7 +167,7 @@ export default class {
 </script>
 ```
 
-### destroy()
+### destroyed()
 
 Run teardown code when the component is to be destroyed
 
@@ -204,13 +206,13 @@ export default class {
 </script>
 ```
 
-### $dispatch()
+### $emit()
 
 Emit events that bubble up to parent components
 
 ```html
 <template>
-  <input @input="$dispatch('change')">
+  <input @input="$emit('change')">
 </template>
 ```
 
@@ -228,7 +230,7 @@ export default class {
   get formattedTime() {
     return new this.time.toISOString()
   }
-  init() {
+  created() {
     this.time = new Date;
   }
 }

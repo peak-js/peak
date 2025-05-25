@@ -1,6 +1,7 @@
 const parser = new DOMParser
 const contexts = new WeakMap
 const handlers = {}
+const instances = {}
 
 export const route = {}
 
@@ -42,6 +43,8 @@ export const component = async (tagName, path) => {
   class _constructor extends HTMLElement {
     constructor() {
       super()
+      this._pk = Math.random().toString().slice(2)
+      instances[this._pk] = this
       this._state = Object.create(null)
       this.created?.()
     }
@@ -52,13 +55,19 @@ export const component = async (tagName, path) => {
       this.render()
       this.mounted?.()
     }
+    disconnectedCallback() {
+      delete(instances[this._pk]) 
+      this.destroyed?.()
+    }
     render() {
+      _contextId = this._pk
       morph(this, render(template, this))
     }
     _defineReactiveProperty(prop, initialValue) {
-      if ((prop in this._state) || prop == '_state') return
+      if ((prop in this._state) || prop.startsWith('_')) return
 
-      this._state[prop] = initialValue
+      _contextId = this._pk
+      this._state[prop] = observable(initialValue)
 
       Object.defineProperty(this, prop, {
         configurable: true,
@@ -211,22 +220,58 @@ function render(template, ctx) {
     }
     if (el.hasAttribute('x-if')) {
       const shouldRender = evalInContext(ctx, el.getAttribute('x-if'))
-      if (!shouldRender) return el.remove()
+      if (!shouldRender) return
     }
     if (el.hasAttribute('x-for')) {
-       // claude, fill this in here
+      const expression = el.getAttribute('x-for')
+      const match = expression.match(/^\s*(\w+)\s+in\s+(.+)$/)
+      if (!match) {
+        console.warn(`[peak] Invalid x-for syntax: ${expression}`)
+        return
+      }
+      const [, itemName, itemsExpr] = match
+      const items = evalInContext(ctx, itemsExpr)
+      const fragment = document.createDocumentFragment()
+      const original = el.cloneNode(true)
+      original.removeAttribute('x-for')
+
+      items.forEach((item, index) => {
+        const clone = original.cloneNode(true)
+        const itemCtx = Object.create(ctx)
+        itemCtx[itemName] = item
+        itemCtx.index = index
+        fragment.appendChild(render(clone, itemCtx))
+      })
+
+      el.replaceWith(fragment)
+      return
+    }
+    if (el.hasAttribute('x-ref')) {
+      ctx.$refs ||= {}
+      ctx.$refs[el.getAttribute('x-ref')] = el
+    }
+    if (el.hasAttribute('x-show')) {
+      const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
+      el.style.display = shouldShow ? null : 'none'
     }
     for (const a of el.attributes || []) {
       if (a.name.startsWith(':')) {
-        el.setAttribute(a.name.slice(1), evalInContext(ctx, a.value))
+        const name = a.name.slice(1)
+        const value = evalInContext(ctx, a.value)
+        el.setAttribute(name, value)
         el.removeAttribute(a.name)
+        el[name] = value
       }
       if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
         listen(eventName, el, ctx)
       }
     }
-    for (const c of el.children) _render(c)
+    const moribund = []
+    for (const c of el.children) {
+      if (!_render(c)) moribund.push(c)
+    }
+    moribund.forEach(c => c.remove())
     return el
   }
   return _render(root)
@@ -290,16 +335,19 @@ function morph(l, r) {
 } 
 
 function evalInContext(element, code, ...args) {
-  const wrappedCode = code.replace(
-    /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
-    (match, identifier) => {
-      const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'console', 'window', 'document', 'JSON', 'Promise', 'let', 'const', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 'finally', 'throw', 'new', 'delete', 'typeof', 'instanceof', 'in', 'of', 'class', 'extends', 'super', 'this', 'event' ]
-      if (keywords.includes(identifier)) return match
-      return `this.${identifier}`
-    }
-  );
-  
-  return new Function(`return ${wrappedCode}`).call(element, ...args);
+
+  if (!code.match(/[\`\"\'\{\$]/)) { //`
+    code = code.replace(
+      /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
+      (match, identifier) => {
+        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event' ]
+        if (keywords.includes(identifier)) return match
+        return `this.${identifier}`
+      }
+    )
+  }
+
+  return new Function(`return ${code}`).call(element, ...args);
 }
 
 let _contextId
@@ -316,7 +364,9 @@ function dep(path) {
   if (!_contextId) return true
   const contextId = _contextId
   deps[path] ||= {}
-  return deps[path][_contextId] = () => el.render()
+  return deps[path][_contextId] = () => {
+    instances[contextId]?.render()
+  }
 }
 
 function observable(x, path = Math.random().toString(36).slice(2)) {
@@ -334,3 +384,4 @@ function observable(x, path = Math.random().toString(36).slice(2)) {
     }
   });
 }
+
