@@ -33,7 +33,7 @@ export const component = async (tagName, path) => {
   const doc = parser.parseFromString(src, 'text/html')
   const _template = doc.querySelector('template')
   const template = document.createElement('div')
-  template.innerHTML = `<div>${_template.innerHTML}</div>`
+  template.innerHTML = `${_template.innerHTML}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent 
   const _class = await loadModule(script, path)
@@ -46,7 +46,7 @@ export const component = async (tagName, path) => {
       this._pk = Math.random().toString().slice(2)
       instances[this._pk] = this
       this._state = Object.create(null)
-      this.created?.()
+      this.initialize?.()
     }
     connectedCallback() {
       for (const key of Object.keys(this)) {
@@ -61,7 +61,8 @@ export const component = async (tagName, path) => {
     }
     render() {
       _contextId = this._pk
-      morph(this, render(template, this))
+      const rendered = render(template, this)
+      morph(this, rendered)
     }
     _defineReactiveProperty(prop, initialValue) {
       if ((prop in this._state) || prop.startsWith('_')) return
@@ -231,16 +232,19 @@ function render(template, ctx) {
       }
       const [, itemName, itemsExpr] = match
       const items = evalInContext(ctx, itemsExpr)
+
       const fragment = document.createDocumentFragment()
-      const original = el.cloneNode(true)
-      original.removeAttribute('x-for')
 
       items.forEach((item, index) => {
-        const clone = original.cloneNode(true)
+        const clone = document.createElement('div')
+        clone.innerHTML = `${el.innerHTML}`
         const itemCtx = Object.create(ctx)
         itemCtx[itemName] = item
         itemCtx.index = index
-        fragment.appendChild(render(clone, itemCtx))
+        const rendered = render(clone, itemCtx)
+        for (const c of rendered.children) {
+          fragment.append(c)
+        }
       })
 
       el.replaceWith(fragment)
@@ -254,13 +258,23 @@ function render(template, ctx) {
       const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
       el.style.display = shouldShow ? null : 'none'
     }
-    for (const a of el.attributes || []) {
+
+    const attrs = []
+    for (const a of el.attributes) {
+      attrs.push({ name: a.name, value: a.value })
+    }
+
+    for (const a of attrs) {
       if (a.name.startsWith(':')) {
         const name = a.name.slice(1)
         const value = evalInContext(ctx, a.value)
-        el.setAttribute(name, value)
-        el.removeAttribute(a.name)
-        el[name] = value
+        if (typeof value != 'object') {
+          el.setAttribute(name, value)
+        } else {
+          console.log("SETVAL", el, name, value)
+          el[name] = value
+        }
+        //el.removeAttribute(a.name)
       }
       if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
@@ -268,7 +282,7 @@ function render(template, ctx) {
       }
     }
     const moribund = []
-    for (const c of el.children) {
+    for (const c of [...el.children]) {
       if (!_render(c)) moribund.push(c)
     }
     moribund.forEach(c => c.remove())
@@ -306,31 +320,37 @@ function handleEvent(event, eventType) {
 }
 
 
-function morph(l, r) {
+function morph(l, r, attr) {
   let ls = 0, rs = 0, le = l.childNodes.length, re = r.childNodes.length
   const lc = [...l.childNodes], rc = [...r.childNodes]
-  const content = e => e.nodeType == 3 ? e.textContent : e.nodeType == 1 ? e.outerHTML : ''
+  const content = e => {
+    if (e.nodeType == 3) return e.textContent
+    if (isCustom(e)) {
+      return `<${e.tagName} ${[...e.attributes].map(x => `${x.name}=${x.value}`).join(' ')} />` 
+    } 
+    return e.outerHTML
+  }
   const key = e => e.nodeType == 1 && customElements.get(e.tagName.toLowerCase()) && e.getAttribute('key') || NaN
+  const isCustom = e => customElements.get(e.tagName?.toLowerCase())
 
-  for (const a of r.attributes || [])
-    if (l.getAttribute(a.name) != a.value) {
-      l.setAttribute(a.name, a.value)
-      if (l.constructor.prototype.hasOwnProperty(a.name) && typeof l[a.name] == 'boolean')
-        l[a.name] = true
-    }
-  for (const a of l.attributes || [])
-    if (!r.hasAttribute(a.name)) {
-      l.removeAttribute(a.name)
-      if (l.constructor.prototype.hasOwnProperty(a.name) && typeof l[a.name] == 'boolean')
-        l[a.name] = false
-    }
+  if (attr) {
+    for (const a of [...r.attributes || []])
+      if (l.getAttribute(a.name) != a.value) {
+        l.setAttribute(a.name, a.value)
+      }
+
+    for (const a of [...l.attributes || []])
+      if (!r.hasAttribute(a.name)) {
+        l.removeAttribute(a.name)
+      }
+  }
 
   while (ls < le || rs < re)
     if (ls == le) l.insertBefore(lc.find(l => key(l) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
     else if (rs == re) l.removeChild(lc[ls++])
     else if (content(lc[ls]) == content(rc[rs])) ls++ & rs++
     else if (content(lc[le - 1]) == content(rc[re - 1])) le-- & re--
-    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) morph(lc[ls++], rc[rs++])
+    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) morph(lc[ls++], rc[rs++], true)
     else lc[ls++].replaceWith(rc[rs++].cloneNode(true))
 } 
 
@@ -347,7 +367,9 @@ function evalInContext(element, code, ...args) {
     )
   }
 
-  return new Function(`return ${code}`).call(element, ...args);
+  try {
+    return new Function(`return ${code}`).call(element, ...args);
+  } catch(e) { console.warn(e) }
 }
 
 let _contextId
