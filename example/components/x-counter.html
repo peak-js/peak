@@ -1,28 +1,16 @@
 <template>
+  <h1 x-text="item.name"></h1>
   <button @click="increment" x-text="data.count"></button>
-  <div x-if="odd" x-text="odd"></div>
-  <div x-show="!odd" x-ref="even">EVEN</div>
-  <div x-for="t in things">
-    <div>NAME: <span x-text="t.name"></span></div>
-  </div>
 </template>
 
 <script>
 export default class {
-  get odd() {
-    return Boolean(this.count % 2)
-  }
-  get things() {
-    return [ { name: 'abc' }, { name: 'def' }, { name: 'ghi' } ]
+  initialize() {
+    console.log("CINIT", this.item)
+    this.data = { count: 0 }
   }
   increment() {
     this.data.count++
-  }
-  mounted() {
-    console.log("MOUNTED", this.prop);
-  }
-  created() {
-    this.data = { count: 0 }
   }
 }
 </script>

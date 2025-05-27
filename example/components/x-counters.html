@@ -1,0 +1,25 @@
+<template>
+  <button @click="addItem">ADDZ</button>
+  <template x-for="item in items">
+    <div :key="item.id" x-text="item.name"></div>
+  </template>
+  <template x-for="item in items">
+    <x-counter :key="item.id" :item="item"></x-counter>
+  </template>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.items = [
+      { id: '142', name: 'apple' },
+      { id: '143', name: 'banana' },
+      { id: '144', name: 'cherry' },
+    ]
+  }
+  addItem() {
+    const id = Math.random().toString(36).slice(2);
+    this.items.unshift({ id, name: id })
+  }
+}
+</script>
