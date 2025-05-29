@@ -44,7 +44,7 @@ export const component = async (tagName, path) => {
   class _constructor extends HTMLElement {
     constructor() {
       super()
-      this._pk = Math.random().toString().slice(2)
+      this._pk = rand()
       instances[this._pk] = this
       this._state = Object.create(null)
       this.initialize?.()
@@ -273,8 +273,7 @@ function render(template, ctx) {
           el.setAttribute(name, value)
         } else {
           const objId = getObjId(value)
-          el.setAttribute(name, `:${objId}`)
-          console.log("SETVAL", el, name, value)
+          el.setAttribute(name, `$${objId}`)
         }
         el[name] = value
         //el.removeAttribute(a.name)
@@ -346,31 +345,13 @@ function morph(l, r, attr) {
   }
 
   while (ls < le || rs < re)
-    if (ls == le) {
-      //console.log("LOUT")
-      l.insertBefore(lc.find(c => key(c) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
-    }
-    else if (rs == re) {
-      //console.log("ROUT")
-      l.removeChild(lc[ls++])
-    }
-    else if (content(lc[ls]) == content(rc[rs])) {
-      //console.log("CMATCH", content(lc[ls]))
-      ls++ & rs++
-    }
-    else if (content(lc[le - 1]) == content(rc[re - 1])) {
-      //console.log("CMATCH REVERSE", content(lc[le - 1]))
-      le-- & re--
-    }
-    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
-      //console.log("MORPH", content(lc[ls]), content(rc[rs]))
-      rc[rs].render?.()
-      morph(lc[ls++], rc[rs++], true)
-    }
-    else {
-      //console.log("REPLACE")
-      lc[ls++].replaceWith(rc[rs++].cloneNode(true))
-    }
+    if (ls == le) l.insertBefore(lc.find(c => key(c) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
+    else if (rs == re) l.removeChild(lc[ls++])
+    else if (content(lc[ls]) == content(rc[rs])) ls++ & rs++
+    else if (content(lc[le - 1]) == content(rc[re - 1])) le-- & re--
+    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName)
+      rc[rs].render?.() || morph(lc[ls++], rc[rs++], true)
+    else lc[ls++].replaceWith(rc[rs++].cloneNode(true))
 } 
 
 function evalInContext(element, code, ...args) {
@@ -410,29 +391,28 @@ function dep(path) {
   }
 }
 
-function observable(x, path = Math.random().toString(36).slice(2)) {
+function observable(x, path = rand()) {
   if ((typeof x != 'object' || x === null) && dep(path)) return x
   return new Proxy(x, {
     set(x, key) {
-      return notify(path + '/' + key) || Reflect.set(...arguments);
+      return notify(path + '/' + key) || Reflect.set(...arguments)
     },
     get(x, key) {
       return x.__target__ ? x[key]
         : typeof key == "symbol" ? Reflect.get(...arguments)
         : (key in x.constructor.prototype && dep(path + '/' + key)) ? x[key]
         : (key == '__target__') ? x
-        : observable(x[key], path + '/' + key);
+        : observable(x[key], path + '/' + key)
     }
   });
 }
 
 function getObjId(o) {
   o = o.__target__ || o
-  if (!objs.has(o)) {
-    console.log("NO", o)
-    objs.set(o, Math.random().toString(36).slice(2))
-  }
+  if (!objs.has(o)) objs.set(o, rand())
   return objs.get(o)
 }
 
-window.getObjId = getObjId
+function rand() {
+  return Math.random().toString(36).slice(2)
+}

@@ -1,6 +1,7 @@
 <template>
   <button @click="cycleMessage">CYCLE</button>
   <x-echo :message="message"></x-echo>
+  <x-echo :message="alt"></x-echo>
   <button @click="addItem">ADDZ</button>
   <template x-for="item in items">
     <div :key="item.id" x-text="item.name"></div>
@@ -16,6 +17,7 @@ export default class {
     this.mi = 0
     this.messages = [ {text: 'hey'}, {text: 'salut'}, {text: 'greetings'} ]
     this.message = this.messages[0]
+    this.alt = { text: 'alternate' }
     this.items = [
       { id: '142', name: 'apple' },
       { id: '143', name: 'banana' },
@@ -28,7 +30,6 @@ export default class {
   }
   cycleMessage() {
     this.message = this.messages[++this.mi % this.messages.length]
-    console.log("CYCLEM", this.message)
   }
 }
 </script>
