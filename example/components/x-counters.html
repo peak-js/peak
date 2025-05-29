@@ -1,4 +1,6 @@
 <template>
+  <button @click="cycleMessage">CYCLE</button>
+  <x-echo :message="message"></x-echo>
   <button @click="addItem">ADDZ</button>
   <template x-for="item in items">
     <div :key="item.id" x-text="item.name"></div>
@@ -11,6 +13,9 @@
 <script>
 export default class {
   initialize() {
+    this.mi = 0
+    this.messages = [ {text: 'hey'}, {text: 'salut'}, {text: 'greetings'} ]
+    this.message = this.messages[0]
     this.items = [
       { id: '142', name: 'apple' },
       { id: '143', name: 'banana' },
@@ -20,6 +25,10 @@ export default class {
   addItem() {
     const id = Math.random().toString(36).slice(2);
     this.items.unshift({ id, name: id })
+  }
+  cycleMessage() {
+    this.message = this.messages[++this.mi % this.messages.length]
+    console.log("CYCLEM", this.message)
   }
 }
 </script>

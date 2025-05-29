@@ -2,6 +2,7 @@ const parser = new DOMParser
 const contexts = new WeakMap
 const handlers = {}
 const instances = {}
+const objs = new WeakMap
 
 export const route = {}
 
@@ -271,9 +272,11 @@ function render(template, ctx) {
         if (typeof value != 'object') {
           el.setAttribute(name, value)
         } else {
+          const objId = getObjId(value)
+          el.setAttribute(name, `:${objId}`)
           console.log("SETVAL", el, name, value)
-          el[name] = value
         }
+        el[name] = value
         //el.removeAttribute(a.name)
       }
       if (a.name.startsWith('@')) {
@@ -330,28 +333,44 @@ function morph(l, r, attr) {
     } 
     return e.outerHTML
   }
-  const key = e => e.nodeType == 1 && customElements.get(e.tagName.toLowerCase()) && e.getAttribute('key') || NaN
+
   const isCustom = e => customElements.get(e.tagName?.toLowerCase())
+  const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN;
 
   if (attr) {
     for (const a of [...r.attributes || []])
-      if (l.getAttribute(a.name) != a.value) {
-        l.setAttribute(a.name, a.value)
-      }
+      if (l.getAttribute(a.name) != a.value) l.setAttribute(a.name, a.value)
 
     for (const a of [...l.attributes || []])
-      if (!r.hasAttribute(a.name)) {
-        l.removeAttribute(a.name)
-      }
+      if (!r.hasAttribute(a.name)) l.removeAttribute(a.name)
   }
 
   while (ls < le || rs < re)
-    if (ls == le) l.insertBefore(lc.find(l => key(l) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
-    else if (rs == re) l.removeChild(lc[ls++])
-    else if (content(lc[ls]) == content(rc[rs])) ls++ & rs++
-    else if (content(lc[le - 1]) == content(rc[re - 1])) le-- & re--
-    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) morph(lc[ls++], rc[rs++], true)
-    else lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+    if (ls == le) {
+      //console.log("LOUT")
+      l.insertBefore(lc.find(c => key(c) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
+    }
+    else if (rs == re) {
+      //console.log("ROUT")
+      l.removeChild(lc[ls++])
+    }
+    else if (content(lc[ls]) == content(rc[rs])) {
+      //console.log("CMATCH", content(lc[ls]))
+      ls++ & rs++
+    }
+    else if (content(lc[le - 1]) == content(rc[re - 1])) {
+      //console.log("CMATCH REVERSE", content(lc[le - 1]))
+      le-- & re--
+    }
+    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
+      //console.log("MORPH", content(lc[ls]), content(rc[rs]))
+      rc[rs].render?.()
+      morph(lc[ls++], rc[rs++], true)
+    }
+    else {
+      //console.log("REPLACE")
+      lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+    }
 } 
 
 function evalInContext(element, code, ...args) {
@@ -407,3 +426,13 @@ function observable(x, path = Math.random().toString(36).slice(2)) {
   });
 }
 
+function getObjId(o) {
+  o = o.__target__ || o
+  if (!objs.has(o)) {
+    console.log("NO", o)
+    objs.set(o, Math.random().toString(36).slice(2))
+  }
+  return objs.get(o)
+}
+
+window.getObjId = getObjId
