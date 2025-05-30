@@ -37,9 +37,9 @@ export const component = async (tagName, path) => {
   template.innerHTML = `${_template.innerHTML}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent 
-  const _class = await loadModule(script, path)
+  const _class = (await loadModule(script, path)) || new Function
 
-  const instance = new (_class || new Function)
+  const instance = new _class
 
   class _constructor extends HTMLElement {
     constructor() {
@@ -54,6 +54,7 @@ export const component = async (tagName, path) => {
         this._defineReactiveProperty(key, this[key])
       }
       this.render()
+      this.$refs = this._refs
       this.mounted?.()
     }
     disconnectedCallback() {
@@ -62,6 +63,7 @@ export const component = async (tagName, path) => {
     }
     render() {
       _contextId = this._pk
+      this._refs = {}
       const rendered = render(template, this)
       morph(this, rendered)
     }
@@ -252,8 +254,7 @@ function render(template, ctx) {
       return
     }
     if (el.hasAttribute('x-ref')) {
-      ctx.$refs ||= {}
-      ctx.$refs[el.getAttribute('x-ref')] = el
+      ctx._refs[el.getAttribute('x-ref')] = el
     }
     if (el.hasAttribute('x-show')) {
       const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
@@ -310,7 +311,7 @@ function handleEvent(event, eventType) {
     
     if (ctx && value) {
       try {
-        if (value in ctx) value += '()'
+        if (value in ctx) value += '(event)'
         evalInContext(ctx, value, event)
         if (event.defaultPrevented || event.cancelBubble) break
       } catch (err) {
@@ -344,14 +345,33 @@ function morph(l, r, attr) {
       if (!r.hasAttribute(a.name)) l.removeAttribute(a.name)
   }
 
-  while (ls < le || rs < re)
-    if (ls == le) l.insertBefore(lc.find(c => key(c) == key(rc[rs])) || rc[rs], lc[ls]) && rs++
-    else if (rs == re) l.removeChild(lc[ls++])
-    else if (content(lc[ls]) == content(rc[rs])) ls++ & rs++
-    else if (content(lc[le - 1]) == content(rc[re - 1])) le-- & re--
-    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName)
-      rc[rs].render?.() || morph(lc[ls++], rc[rs++], true)
-    else lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+  while (ls < le || rs < re) {
+    if (ls == le) {
+      rc[rs].render?.()
+      l.insertBefore(rc[rs++], lc[ls])
+    }
+    else if (rs == re) {
+      //console.log("ROUT")
+      l.removeChild(lc[ls++])
+    }
+    else if (content(lc[ls]) == content(rc[rs])) {
+      //console.log("CMATCH")
+      ls++ & rs++
+    }
+    else if (content(lc[le - 1]) == content(rc[re - 1])) {
+      //console.log("CMATCH REVERSE")
+      le-- & re--
+    }
+    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
+      //console.log("MORPH")
+      rc[rs].render?.()
+      morph(lc[ls++], rc[rs++], true)
+    }
+    else {
+      //console.log("REPLACE")
+      lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+    }
+  }
 } 
 
 function evalInContext(element, code, ...args) {
@@ -360,7 +380,7 @@ function evalInContext(element, code, ...args) {
     code = code.replace(
       /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
       (match, identifier) => {
-        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event' ]
+        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'Boolean', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event' ]
         if (keywords.includes(identifier)) return match
         return `this.${identifier}`
       }
@@ -368,8 +388,12 @@ function evalInContext(element, code, ...args) {
   }
 
   try {
-    return new Function(`return ${code}`).call(element, ...args);
-  } catch(e) { console.warn(e) }
+    // Pass args[0] as the 'event' parameter to the function
+    return new Function('event', `return ${code}`).call(element, args[0]);
+  } catch(e) {
+    try { var tagName = element.tagName } catch(e) {}
+    console.warn(element, tagName, code, e) 
+  }
 }
 
 let _contextId
@@ -416,3 +440,6 @@ function getObjId(o) {
 function rand() {
   return Math.random().toString(36).slice(2)
 }
+
+
+export const store = observable({})

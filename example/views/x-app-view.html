@@ -5,16 +5,16 @@
       <input x-ref="input" name="title" type="text" placeholder="What needs doing?">
     </form>
     <div class="items">
-      <template x-for="item in items" :key="item.id">
-        <x-list-item :item="item"></x-list-item>
+      <template x-for="item in items">
+        <x-list-item :item="item" :title="item.title"></x-list-item>
       </template>
     </div>
     <footer class="flex space-between mt-24">
-      <span class="text-14" x-text="`${items.length} items`"></span>
+      <span class="text-14" x-text="`${this.items.length} items`"></span>
       <span>
         <template x-for="label in labels">
           <button
-            :class="filter == label && 'selected'"
+            :class="this.filter == this.label && 'selected'"
             class="mx-2"
             @click="setFilter"
             :data-filter="label"
@@ -65,7 +65,7 @@ export default class {
 h1 {
   margin: 0 0 16px;
 }
-input {
+input[type=text] {
   padding: 6px 8px;
   width: 100%;
   border-radius: 3px;

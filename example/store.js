@@ -12,7 +12,7 @@ store.initialize = () => {
       this.filter = v
     },
     setItem(item, data) {
-      const idx = this.items.findIndex(i => i == item)
+      const idx = this.items.findIndex(i => i.id== item.id)
       Object.assign(this.items[idx], data)
     },
     removeItem(i) {
@@ -26,10 +26,13 @@ store.initialize = () => {
       })
     },
     clearCompleted() {
-      this.items = this.items.filter(i => !i.done)
+      let i = this.items.length
+      while (i--)
+        if (this.items[i].done)
+          this.items.splice(i, 1)
     },
     addItem(title) {
-      store.items.unshift({ id: id(), title, done: false })
+      this.items.push({ id: id(), title, done: false })
     }
   })
 }
