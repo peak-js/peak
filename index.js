@@ -47,32 +47,38 @@ export const component = async (tagName, path) => {
       this._pk = rand()
       instances[this._pk] = this
       this._state = Object.create(null)
+      this._watchers = []
       this.initialize?.()
       for (const key of Object.keys(this)) {
         this._defineReactiveProperty(key, this[key])
       }
       this._initialized = true
-      this.created?.()
     }
     connectedCallback() {
+      for (const [expr, fn] of this._watchers) {
+        this.$watch(expr, fn, true)
+      }
       this.$render()
       this.$refs = this._refs
       this.mounted?.()
     }
     disconnectedCallback() {
-      delete(instances[this._pk]) 
+      delete(instances[this._pk])
       this.destroyed?.()
     }
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
     }
-    $watch(expr, fn) {
-      if (!this._initialized)
-        console.warn(`[peak] can't watch during initialize in ${this.tagName}`)
-      if (!dep._path) return
-      deps[dep._path] ||= {}
-      deps[dep._path][rand()] = fn
-      dep._path = null
+    $watch(expr, fn, deferred) {
+      if (!this._initialized || !deferred) {
+        this._watchers.push([expr, fn])
+      }
+      if (this._initialized) {
+        _contextId = rand()
+        instances[_contextId] = { $render() { fn() } }
+        evalInContext(this, expr)
+        _contextId = null
+      }
     }
     $render() {
       _contextId = this._pk
@@ -417,7 +423,6 @@ function notify(path) {
 }
 
 function dep(path) {
-  dep._path = !_contextId && path
   if (!_contextId) return true
   const contextId = _contextId
   deps[path] ||= {}

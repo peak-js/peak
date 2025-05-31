@@ -22,7 +22,8 @@ Easy reactive web framework with no setup required
 
 ## Features
 
-- Reactive web framework 
+- Reactive web framework
+- Inspired by Vue and Alpine
 - No build step necessary
 - Reusable single-file components
 - Powered by Alpine.js and web components
@@ -148,13 +149,9 @@ Refer to an HTML element via `$refs`
 
 ### initialize()
 
-Run code when the component is initialized
+Run code when the component is initialized before mounted
 
-### created()
-
-Run code when the component has been created and initialized but not yet mounted
-
-### mounted() 
+### mounted()
 
 Run code when the component is mounted
 
@@ -189,7 +186,7 @@ export default class {
 </script>
 ```
 
-### $watch()
+### $watch(expr)
 
 Run methods when reactive data changes
 
@@ -204,7 +201,7 @@ export default class {
     this.count = 0
   }
   created() {
-    this.$watch(this.count, () => {
+    this.$watch('count', () => {
       console.log("count is now", this.count)
     })
   }
@@ -212,7 +209,7 @@ export default class {
 </script>
 ```
 
-### $emit()
+### $emit(eventName, detail)
 
 Emit events that bubble up to parent components
 

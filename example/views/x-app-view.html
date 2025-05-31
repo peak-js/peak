@@ -36,10 +36,8 @@ import { store } from '../store.js'
 export default class {
   initialize() {
     this.clearCount = 0
-  }
-  created() {
-    this.$watch(this.filter, () => console.log("FILTERCHANGE"))
-    this.$watch(this.clearCount, () => console.log("COUNTCHANGE"))
+    this.$watch('filter', () => console.log("FILTERCHANGE"))
+    this.$watch('clearCount', () => console.log("COUNTCHANGE"))
   }
   addItem(e) {
     e.preventDefault()
