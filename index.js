@@ -230,7 +230,7 @@ async function loadModule(source='', url) {
 
 function render(template, ctx) {
   const root = template.cloneNode(true)
-  function _render(el) {
+  function _render(el, state) {
     if (!el.children.length && el.hasAttribute('x-text')) {
       el.textContent = evalInContext(ctx, el.getAttribute('x-text'))
       el.removeAttribute('x-text')
@@ -239,9 +239,30 @@ function render(template, ctx) {
       el.innerHTML = evalInContext(ctx, el.getAttribute('x-html'))
       el.removeAttribute('x-html')
     }
+    if (state.pass !== undefined) {
+      if (!el.hasAttribute('x-else-if') && !el.hasAttribute('x-else')) {
+        delete state.pass
+      }
+    }
     if (el.hasAttribute('x-if')) {
       const shouldRender = evalInContext(ctx, el.getAttribute('x-if'))
+      state.pass = Boolean(shouldRender)
+      el.removeAttribute('x-if')
       if (!shouldRender) return
+    }
+    if (el.hasAttribute('x-else-if')) {
+      if (state.pass === undefined) console.warn('invalid x-else-if', el)
+      if (state.pass) return
+      const shouldRender = evalInContext(ctx, el.getAttribute('x-else-if'))
+      state.pass = Boolean(shouldRender)
+      el.removeAttribute('x-else-if')
+      if (!shouldRender) return
+    }
+    if (el.hasAttribute('x-else')) {
+      if (state.pass === undefined || el.getAttribute('x-else')) {
+        console.warn('invalid x-else', el)
+      }
+      if (state.pass) return
     }
     if (el.hasAttribute('x-for')) {
       const expression = el.getAttribute('x-for')
@@ -302,13 +323,14 @@ function render(template, ctx) {
       }
     }
     const moribund = []
+    const _state = {}
     for (const c of [...el.children]) {
-      if (!_render(c)) moribund.push(c)
+      if (!_render(c, _state)) moribund.push(c)
     }
     moribund.forEach(c => c.remove())
     return el
   }
-  return _render(root)
+  return _render(root, {})
 }
 
 function listen(eventType, el, ctx) {
