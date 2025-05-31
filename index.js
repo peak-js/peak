@@ -48,12 +48,14 @@ export const component = async (tagName, path) => {
       instances[this._pk] = this
       this._state = Object.create(null)
       this.initialize?.()
-    }
-    connectedCallback() {
       for (const key of Object.keys(this)) {
         this._defineReactiveProperty(key, this[key])
       }
-      this.render()
+      this._initialized = true
+      this.created?.()
+    }
+    connectedCallback() {
+      this.$render()
       this.$refs = this._refs
       this.mounted?.()
     }
@@ -61,26 +63,35 @@ export const component = async (tagName, path) => {
       delete(instances[this._pk]) 
       this.destroyed?.()
     }
-    render() {
+    $emit(eventType, detail) {
+      this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
+    }
+    $watch(expr, fn) {
+      if (!this._initialized)
+        console.warn(`[peak] can't watch during initialize in ${this.tagName}`)
+      if (!dep._path) return
+      deps[dep._path] ||= {}
+      deps[dep._path][rand()] = fn
+      dep._path = null
+    }
+    $render() {
       _contextId = this._pk
       this._refs = {}
       const rendered = render(template, this)
       morph(this, rendered)
+      _contextId = null
     }
     _defineReactiveProperty(prop, initialValue) {
       if ((prop in this._state) || prop.startsWith('_')) return
 
-      _contextId = this._pk
       this._state[prop] = observable(initialValue)
+      const path = `${this.tagName}/${this._pk}/${prop}`
 
       Object.defineProperty(this, prop, {
         configurable: true,
         enumerable: true,
-        get: () => this._state[prop],
-        set: (val) => {
-          this._state[prop] = val;
-          this.render();
-        }
+        get: () => dep(path) && this._state[prop],
+        set: (val) => notify(path) || (this._state[prop] = val)
       })
     }
   }
@@ -347,7 +358,7 @@ function morph(l, r, attr) {
 
   while (ls < le || rs < re) {
     if (ls == le) {
-      rc[rs].render?.()
+      rc[rs].$render?.()
       l.insertBefore(rc[rs++], lc[ls])
     }
     else if (rs == re) {
@@ -364,7 +375,7 @@ function morph(l, r, attr) {
     }
     else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
       //console.log("MORPH")
-      rc[rs].render?.()
+      rc[rs].$render?.()
       morph(lc[ls++], rc[rs++], true)
     }
     else {
@@ -411,7 +422,7 @@ function dep(path) {
   const contextId = _contextId
   deps[path] ||= {}
   return deps[path][_contextId] = () => {
-    instances[contextId]?.render()
+    instances[contextId]?.$render()
   }
 }
 

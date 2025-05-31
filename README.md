@@ -44,7 +44,7 @@ Components are defined in plain HTML files, with each file having a `<template>`
 
 <script>
   export default class {
-    init() {
+    initialize() {
       this.count = 0
     }
     increment() {
@@ -146,9 +146,13 @@ Refer to an HTML element via `$refs`
 
 ## Component methods
 
+### initialize()
+
+Run code when the component is initialized
+
 ### created()
 
-Run code when the component is created but not yet rendered
+Run code when the component has been created and initialized but not yet mounted
 
 ### mounted() 
 
@@ -196,10 +200,12 @@ Run methods when reactive data changes
 
 <script>
 export default class {
-  init() {
+  initialize() {
     this.count = 0
-    this.$watch('count', value => {
-      console.log("count is now", value)
+  }
+  created() {
+    this.$watch(this.count, () => {
+      console.log("count is now", this.count)
     })
   }
 }
