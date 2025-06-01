@@ -27,6 +27,7 @@ Easy reactive web framework with no setup required
 - Reusable single-file components
 - Scoped CSS styles per component
 - Optional url-based view routing
+- Lightweight at less than 5kb gzipped
 
 ## Components
 
