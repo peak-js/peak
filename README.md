@@ -199,8 +199,6 @@ Run methods when reactive data changes
 export default class {
   initialize() {
     this.count = 0
-  }
-  created() {
     this.$watch('count', () => {
       console.log("count is now", this.count)
     })
