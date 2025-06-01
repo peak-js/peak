@@ -22,13 +22,11 @@ Easy reactive web framework with no setup required
 
 ## Features
 
-- Reactive web framework
-- Inspired by Vue and Alpine
+- Reactive web framework based on Web Components
 - No build step necessary
 - Reusable single-file components
-- Powered by Alpine.js and web components
-- Scoped CSS per component
-- Optional url-based routing
+- Scoped CSS styles per component
+- Optional url-based view routing
 
 ## Components
 
@@ -256,7 +254,7 @@ Styles defined in the component are scoped to the component — they won't leak 
 
 ## Routing
 
-Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API
+Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API.  Views are just regular components, associated with a route.
 
 ```html
 <nav>
@@ -267,7 +265,7 @@ Peak comes with an optional built-in router.  Register views to route patterns f
 <x-router-view></x-router-view>
 
 <script type="module">
-  import { router, component } from 'peak'
+  import { router } from 'peak'
 
   router.route('/', '/views/x-home.html')
   router.route('/about', '/views/x-about.html')
