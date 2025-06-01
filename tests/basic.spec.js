@@ -42,4 +42,29 @@ test('x-for', async ({ page }) => {
   await expect(page.locator('li', { hasText: 'blue' })).toBeVisible()
 })
 
+test('events', async({ page }) => {
+  await page.goto('/events.html')
 
+  // inline handler
+  await expect(page.locator('[data-testid="btn0"]', { hasText: 'btn0 0' })).toBeVisible()
+  await page.locator('[data-testid="btn0"]').dispatchEvent('click')
+  await expect(page.locator('[data-testid="btn0"]', { hasText: 'btn0 1' })).toBeVisible()
+  await page.locator('[data-testid="btn0"]').dispatchEvent('click')
+  await expect(page.locator('[data-testid="btn0"]', { hasText: 'btn0 2' })).toBeVisible()
+
+  // method with custom arg
+  await expect(page.locator('[data-testid="btn1"]', { hasText: 'btn1 0' })).toBeVisible()
+  await page.locator('[data-testid="btn1"]').dispatchEvent('click')
+  await expect(page.locator('[data-testid="btn1"]', { hasText: 'btn1 1' })).toBeVisible()
+
+  // stopping propagation with $event
+  await expect(page.locator('[data-testid="btn2"]', { hasText: 'btn2 0' })).toBeVisible()
+  await page.locator('[data-testid="btn2"]').dispatchEvent('click')
+  await expect(page.locator('[data-testid="btn2"]', { hasText: 'btn2 1' })).toBeVisible()
+
+  // bubbling
+  await expect(page.locator('[data-testid="btn3"]', { hasText: 'btn3 0' })).toBeVisible()
+  await page.locator('[data-testid="btn3"]').dispatchEvent('click')
+  await expect(page.locator('[data-testid="btn3"]', { hasText: 'btn3 2' })).toBeVisible()
+
+})

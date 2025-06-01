@@ -369,12 +369,15 @@ function handleEvent(event, eventType) {
     let value = target.getAttribute(`@${eventType}`)
 
     if (ctx && value) {
+      ctx.$event = event
       try {
         if (value in ctx) value += '(event)'
         evalInContext(ctx, value, event)
         if (event.defaultPrevented || event.cancelBubble) break
       } catch (err) {
         console.error(err)
+      } finally {
+        delete ctx.$event
       }
     }
     target = target.parentElement

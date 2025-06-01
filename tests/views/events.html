@@ -1,0 +1,40 @@
+<template>
+  <button @click="count++" data-testid="btn0" x-text="`btn0 ${this.count}`"></button>
+
+  <hr>
+
+  <section @click="increment(1)">
+    <button data-testid="btn1" x-text="`btn1 ${this.counts[1]}`"></button>
+  </section>
+
+  <hr>
+
+  <section @click="incrementStop(2)">
+    <button @click="incrementStop(2)" data-testid="btn2" x-text="`btn2 ${this.counts[2]}`"></button>
+  </section>
+
+  <hr>
+
+  <section @click="increment(3)">
+    <button @click="increment(3)" data-testid="btn3" x-text="`btn3 ${this.counts[3]}`"></button>
+  </section>
+
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.count = 0
+    this.counts = { 0: 0, 1: 0, 2: 0, 3: 0 }
+  }
+  increment(idx) {
+    this.counts[idx]++
+  }
+  incrementStop(idx) {
+    this.$event.stopPropagation()
+    this.counts[idx]++
+  }
+}
+</script>
+
+
