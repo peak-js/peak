@@ -196,7 +196,6 @@ async function loadModule(source='', url) {
     const mod = await import(path);
 
     if (!specifiers.startsWith('{')) {
-      // Default import
       injectedVars.push(specifiers.trim());
       injectedValues.push(mod.default);
     } else {
@@ -231,40 +230,49 @@ async function loadModule(source='', url) {
 function render(template, ctx) {
   const root = template.cloneNode(true)
   function _render(el, state) {
-    if (!el.children.length && el.hasAttribute('x-text')) {
+    if (el.hasAttribute?.('x-text') && !el.hasAttribute?.('x-for')) {
       el.textContent = evalInContext(ctx, el.getAttribute('x-text'))
       el.removeAttribute('x-text')
     }
-    if (!el.children.length && el.hasAttribute('x-html')) {
+    if (el.hasAttribute?.('x-html') && !el.hasAttribute?.('x-for')) {
       el.innerHTML = evalInContext(ctx, el.getAttribute('x-html'))
       el.removeAttribute('x-html')
     }
     if (state.pass !== undefined) {
-      if (!el.hasAttribute('x-else-if') && !el.hasAttribute('x-else')) {
+      if (!el.hasAttribute?.('x-else-if') && !el.hasAttribute?.('x-else')) {
         delete state.pass
       }
     }
-    if (el.hasAttribute('x-if')) {
+    if (el.hasAttribute?.('x-if')) {
       const shouldRender = evalInContext(ctx, el.getAttribute('x-if'))
       state.pass = Boolean(shouldRender)
       el.removeAttribute('x-if')
       if (!shouldRender) return
+      if (el.tagName == 'TEMPLATE') {
+        el.replaceWith(render(el.content, ctx))
+      }
     }
-    if (el.hasAttribute('x-else-if')) {
+    if (el.hasAttribute?.('x-else-if')) {
       if (state.pass === undefined) console.warn('invalid x-else-if', el)
       if (state.pass) return
       const shouldRender = evalInContext(ctx, el.getAttribute('x-else-if'))
       state.pass = Boolean(shouldRender)
       el.removeAttribute('x-else-if')
       if (!shouldRender) return
+      if (el.tagName == 'TEMPLATE') {
+        el.replaceWith(render(el.content, ctx))
+      }
     }
-    if (el.hasAttribute('x-else')) {
+    if (el.hasAttribute?.('x-else')) {
       if (state.pass === undefined || el.getAttribute('x-else')) {
         console.warn('invalid x-else', el)
       }
       if (state.pass) return
+      if (el.tagName == 'TEMPLATE') {
+        el.replaceWith(render(el.content, ctx))
+      }
     }
-    if (el.hasAttribute('x-for')) {
+    if (el.hasAttribute?.('x-for')) {
       const expression = el.getAttribute('x-for')
       const match = expression.match(/^\s*(\w+)\s+in\s+(.+)$/)
       if (!match) {
@@ -277,12 +285,17 @@ function render(template, ctx) {
       const fragment = document.createDocumentFragment()
 
       items.forEach((item, index) => {
-        const clone = document.createElement('div')
-        clone.innerHTML = `${el.innerHTML}`
+        const clone = document.createElement('template')
+        if (el.tagName == 'TEMPLATE') {
+          clone.innerHTML = el.innerHTML
+        } else {
+          clone.innerHTML = el.outerHTML
+          clone.content.children[0].removeAttribute('x-for')
+        }
         const itemCtx = Object.create(ctx)
         itemCtx[itemName] = item
         itemCtx.index = index
-        const rendered = render(clone, itemCtx)
+        const rendered = render(clone.content, itemCtx)
         for (const c of rendered.children) {
           fragment.append(c)
         }
@@ -291,16 +304,16 @@ function render(template, ctx) {
       el.replaceWith(fragment)
       return
     }
-    if (el.hasAttribute('x-ref')) {
+    if (el.hasAttribute?.('x-ref')) {
       ctx._refs[el.getAttribute('x-ref')] = el
     }
-    if (el.hasAttribute('x-show')) {
+    if (el.hasAttribute?.('x-show')) {
       const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
       el.style.display = shouldShow ? null : 'none'
     }
 
     const attrs = []
-    for (const a of el.attributes) {
+    for (const a of el.attributes || []) {
       attrs.push({ name: a.name, value: a.value })
     }
 
@@ -343,11 +356,11 @@ function listen(eventType, el, ctx) {
 
 function handleEvent(event, eventType) {
   let target = event.target
-  
+
   while (target && target !== document) {
     const ctx = contexts.get(target)
     let value = target.getAttribute(`@${eventType}`)
-    
+
     if (ctx && value) {
       try {
         if (value in ctx) value += '(event)'

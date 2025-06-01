@@ -1,0 +1,22 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+component('x-test-text', '/components/x-test-text.html')
+component('x-test-html', '/components/x-test-html.html')
+component('x-test-if', '/components/x-test-if.html')
+component('x-test-for', '/components/x-test-for.html')
+
+router.route('/x-text.html', 'x-test-text')
+router.route('/x-html.html', 'x-test-html')
+router.route('/x-if.html', 'x-test-if')
+router.route('/x-for.html', 'x-test-for')
+
+router.on('navigation', route => console.log('navigation', route))
+router.on('notFound', route => console.log('not-found', route))
+
+</script>

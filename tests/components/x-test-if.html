@@ -1,0 +1,45 @@
+<template>
+
+  <div x-if="true">true is true</div>
+
+  <hr>
+
+  <div x-if="false">false is not true</div>
+  <div x-else>false is false</div>
+
+  <hr>
+
+  <div x-if="0">zero is not true</div>
+  <div x-else-if="">empty is not true</div>
+
+  --
+
+  <hr>
+
+  <div x-if="1">one is true</div>
+  <div x-else-if="2">two is superseded</div>
+  <div x-else>three has no chance</div>
+
+  <hr>
+
+  <div x-if="0">no thank you</div>
+  <div x-else-if="1">yes one</div>
+  <div x-else>no fallback</div>
+
+  <hr>
+
+  <div x-if="null">negative</div>
+  <div x-else-if="undefined">nah</div>
+  <div x-else>default is default</div>
+
+  <hr>
+
+  <ul>
+    <li>one</li>
+    <template x-if="true">
+      <li>two</li>
+      <li>three</li>
+    </template>
+  </ul>
+
+</template>
