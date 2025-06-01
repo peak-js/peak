@@ -215,6 +215,32 @@ Emit events that bubble up to parent components
 </template>
 ```
 
+## Component properties
+
+### $event
+
+Refer to the event being handled
+
+```
+<template>
+  <button @click="incrementBy(10)">Add 10</button>
+</template>
+
+<script>
+export default class {
+  incrementBy(n) {
+    this.$event.stopPropagation()
+    this.count += n
+  }
+}
+</script>
+```
+
+### $refs
+
+Refer to elements within the component by the name in their `x-ref` attribute
+
+
 ## Computed properties
 
 Use instance getters for display formatting, and other derived properties
