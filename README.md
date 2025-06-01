@@ -271,17 +271,11 @@ Peak comes with an optional built-in router.  Register views to route patterns f
 <script type="module">
   import { router, component } from 'peak'
 
-  router.route('/', 'x-home-view')
-  router.route('/about', 'x-about-view')
-
-  component('x-home-view', '/views/x-home-view.html')
-  component('x-about-view', '/views/x-about-view.html')
+  router.route('/', '/views/x-home-view.html')
+  router.route('/about', '/views/x-about-view')
 
   router.on('navigation', e => console.log(e))
   router.on('notFound', e => console.warn(e))
 </script>
 ```
-
-
-
 

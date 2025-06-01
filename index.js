@@ -9,10 +9,15 @@ export const route = {}
 export const router = Object.assign(new EventTarget, {
   _route: route,
   routes: [],
-  route(pattern, tagName) {
+  route(pattern, path) {
+    const tagName = `${slugify(path.replace(/^[^a-z]+|[^a-z]+$|\.html$/g, ''))}-${hsh(path)}`
     const params = []
     const regex = new RegExp('^' + pattern.replace(/\/:([^\/]+)/g, (_, key) => params.push(key) && '/([^/]+)') + '$')
-    this.routes.push({ pattern, tagName, regex, params })
+    const loadingPromise = new Promise(async (resolve, reject) => {
+      await component(tagName, path)
+      resolve()
+    })
+    this.routes.push({ pattern, tagName, regex, params, loadingPromise })
   },
   push(url, state={}) {
     history.pushState(state, "", url)
@@ -55,6 +60,7 @@ export const component = async (tagName, path) => {
       this._initialized = true
     }
     connectedCallback() {
+      this.setAttribute('x-scope', true);
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
       }
@@ -115,8 +121,8 @@ export const component = async (tagName, path) => {
         ${tagName} {
           ${style};
         }
-        ${tagName} [x-data],
-        ${tagName} [x-data] * {
+        ${tagName} [x-scope],
+        ${tagName} [x-scope] * {
           all: revert-layer;
         }
       }
@@ -134,7 +140,7 @@ class routerView extends HTMLElement {
       return { route, params: Object.fromEntries(params) }
     }
   }
-  route() {
+  async route() {
     const { route, params } = this.match() || {}
     if (!route) {
       console.warn("[peak] no route found:", window.location.pathname)
@@ -142,7 +148,8 @@ class routerView extends HTMLElement {
       return
     }
     const query = Object.fromEntries(new URLSearchParams(location.search));
-    const { tagName } = route
+    const { tagName, loadingPromise } = route
+    await loadingPromise
     for (let k in router._route) delete router.route[k]
     Object.assign(router._route, route, { params, query, path: location.pathname })
     this.innerHTML = `<${tagName}></${tagName}>`
@@ -440,7 +447,6 @@ function evalInContext(element, code, ...args) {
   }
 
   try {
-    // Pass args[0] as the 'event' parameter to the function
     return new Function('event', `return ${code}`).call(element, args[0]);
   } catch(e) {
     try { var tagName = element.tagName } catch(e) {}
@@ -492,5 +498,12 @@ function rand() {
   return Math.random().toString(36).slice(2)
 }
 
+function slugify(str) {
+  return str.toLowerCase().replace(/[^\w\-]+/g, '-')
+}
+
+function hsh(str) {
+  return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0)
+}
 
 export const store = observable({})
