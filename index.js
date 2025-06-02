@@ -58,9 +58,9 @@ export const component = async (tagName, path) => {
         this._defineReactiveProperty(key, this[key])
       }
       this._initialized = true
+      this.setAttribute('x-scope', true);
     }
     connectedCallback() {
-      this.setAttribute('x-scope', true);
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
       }
@@ -328,7 +328,9 @@ function render(template, ctx) {
       if (a.name.startsWith(':')) {
         const name = a.name.slice(1)
         const value = evalInContext(ctx, a.value)
-        if (typeof value != 'object') {
+        if (typeof value == 'boolean' && isBoolAttr(el, name) && !value) {
+          el.removeAttribute(name)
+        } else if (typeof value != 'object') {
           el.setAttribute(name, value)
         } else {
           const objId = getObjId(value)
@@ -391,25 +393,35 @@ function morph(l, r, attr) {
   const content = e => {
     if (e.nodeType == 3) return e.textContent
     if (isCustom(e)) {
-      return `<${e.tagName} ${[...e.attributes].map(x => `${x.name}=${x.value}`).join(' ')} />` 
+      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope').map(x => `${x.name}=${x.value}`).join(' ')} />` 
     } 
     return e.outerHTML
   }
 
   const isCustom = e => customElements.get(e.tagName?.toLowerCase())
-  const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN;
+  const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN
+  const render = e => isCustom(e) && customElements.upgrade(e) || e.$render?.()
 
   if (attr) {
-    for (const a of [...r.attributes || []])
-      if (l.getAttribute(a.name) != a.value) l.setAttribute(a.name, a.value)
+    for (const a of [...r.attributes || []]) {
+      if (l.getAttribute(a.name) != a.value) {
+        l.setAttribute(a.name, a.value)
+        if (isBoolAttr(l, a.name)) l[a.name] = true
+      }
+    }
 
-    for (const a of [...l.attributes || []])
-      if (!r.hasAttribute(a.name)) l.removeAttribute(a.name)
+    for (const a of [...l.attributes || []]) {
+      if (!r.hasAttribute(a.name)) {
+        l.removeAttribute(a.name)
+        if (isBoolAttr(l, a.name)) l[a.name] = false
+      }
+    }
   }
 
   while (ls < le || rs < re) {
     if (ls == le) {
-      rc[rs].$render?.()
+      //console.log("LOUT")
+      render(rc[rs])
       l.insertBefore(rc[rs++], lc[ls])
     }
     else if (rs == re) {
@@ -426,7 +438,7 @@ function morph(l, r, attr) {
     }
     else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
       //console.log("MORPH")
-      rc[rs].$render?.()
+      render(rc[rs])
       morph(lc[ls++], rc[rs++], true)
     }
     else {
@@ -503,6 +515,10 @@ function rand() {
 
 function slugify(str) {
   return str.toLowerCase().replace(/[^\w\-]+/g, '-')
+}
+
+function isBoolAttr(el, name) {
+  return el.constructor.prototype.hasOwnProperty(name) && typeof el[name] == 'boolean'
 }
 
 function hsh(str) {
