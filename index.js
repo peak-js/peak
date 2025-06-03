@@ -421,8 +421,10 @@ function morph(l, r, attr) {
   while (ls < le || rs < re) {
     if (ls == le) {
       //console.log("LOUT")
-      render(rc[rs])
-      l.insertBefore(rc[rs++], lc[ls])
+      let match = lc.find((c, i) => c.getAttribute?.('key') === rc[rs].getAttribute('key') && i > ls)
+      match ||= (match = rc[rs]) || render(rc[rs])
+      l.insertBefore(match, lc[ls])
+      rs++
     }
     else if (rs == re) {
       //console.log("ROUT")
