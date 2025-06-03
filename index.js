@@ -387,7 +387,7 @@ function handleEvent(event, eventType) {
 }
 
 
-function morph(l, r, attr) {
+export function morph(l, r, attr) {
   let ls = 0, rs = 0, le = l.childNodes.length, re = r.childNodes.length
   const lc = [...l.childNodes], rc = [...r.childNodes]
   const content = e => {
