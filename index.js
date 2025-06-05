@@ -327,10 +327,14 @@ function render(template, ctx) {
     for (const a of attrs) {
       if (a.name.startsWith(':')) {
         const name = a.name.slice(1)
-        const value = evalInContext(ctx, a.value)
+        const expr = name == 'class' ? `_pk_clsx(${a.value})` : a.value
+        let value = evalInContext(ctx, expr)
         if (typeof value == 'boolean' && isBoolAttr(el, name) && !value) {
           el.removeAttribute(name)
         } else if (typeof value != 'object') {
+          if (name == 'class') {
+            value += ' ' + el.getAttribute('class') || ''
+          }
           el.setAttribute(name, value)
         } else {
           const objId = getObjId(value)
@@ -457,7 +461,7 @@ function evalInContext(element, code, ...args) {
     code = code.replace(
       /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
       (match, identifier) => {
-        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'Boolean', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event' ]
+        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'Boolean', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event', '_pk_clsx' ]
         if (keywords.includes(identifier)) return match
         return `this.${identifier}`
       }
@@ -465,7 +469,7 @@ function evalInContext(element, code, ...args) {
   }
 
   try {
-    return new Function('event', `return ${code}`).call(element, args[0]);
+    return new Function('event', '_pk_clsx', `return ${code}`).call(element, args[0], clsx);
   } catch(e) {
     try { var tagName = element.tagName } catch(e) {}
     console.warn(element, tagName, code, e) 
@@ -505,6 +509,49 @@ function observable(x, path = rand()) {
     }
   });
 }
+
+function clsx() {
+  var i=0, tmp, x, str='', len=arguments.length;
+  for (; i < len; i++) {
+    if (tmp = arguments[i]) {
+      if (x = clsxToVal(tmp)) {
+        str && (str += ' ');
+        str += x
+      }
+    }
+  }
+  return str;
+}
+
+function clsxToVal(mix) {
+  var k, y, str='';
+
+  if (typeof mix === 'string' || typeof mix === 'number') {
+    str += mix;
+  } else if (typeof mix === 'object') {
+    if (Array.isArray(mix)) {
+      var len=mix.length;
+      for (k=0; k < len; k++) {
+        if (mix[k]) {
+          if (y = clsxToVal(mix[k])) {
+            str && (str += ' ');
+            str += y;
+          }
+        }
+      }
+    } else {
+      for (y in mix) {
+        if (mix[y]) {
+          str && (str += ' ');
+          str += y;
+        }
+      }
+    }
+  }
+
+  return str;
+}
+
 
 function getObjId(o) {
   o = o.__target__ || o

@@ -1,0 +1,29 @@
+<template>
+  <button class="btn">Static</button>
+  <button :class="`btn ${this.isActive && 'active'}`">String</button>
+  <button class="btn" :class="{active: this.isActive}">Object</button>
+  <button :class="['btn', {'active': this.isActive}]">Array</button>
+  <hr>
+  <button @click="toggleActive">Toggle</button>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.isActive = true
+  }
+  toggleActive() {
+    this.isActive = !this.isActive
+  }
+}
+</script>
+
+<style>
+.btn {
+  background: magenta;
+  border: 2px solid black;
+}
+.active {
+  background: cyan;
+}
+</style>
