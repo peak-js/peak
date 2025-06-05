@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js Morph Tests</title>
+</head>
+<body>
+  <h1>Morph Test</h1>
+
+  <h2>Text changes</h2>
+  <div id="$text">Initial text</div>
+  <button onclick="changeText()">Change text</button>
+
+  <hr>
+
+  <h2>Attribute changes</h2>
+  <div id="$attr" class="test-class" data-test="initial">Attribute test</div>
+  <button onclick="changeAttr()">Change attributes</button>
+
+  <hr>
+
+  <h2>Boolean attributes</h2>
+  <input type="checkbox" id="$bool" checked>
+  <button onclick="toggleBool()">Toggle checkbox</button>
+
+  <hr>
+
+  <h2>Adding elements</h2>
+  <ul id="$grow">
+    <li>Item 1</li>
+    <li>Item 2</li>
+  </ul>
+  <button onclick="addItem()">Add item</button>
+
+  <hr>
+
+  <h2>Removing Elements</h2>
+  <ul id="$prune">
+    <li>Item 1</li>
+    <li>Item 2</li>
+    <li>Item 3</li>
+  </ul>
+  <button onclick="removeItem()">Remove item</button>
+
+  <hr>
+
+  <h2>Keyed elements reordering</h2>
+  <ul id="$scramble">
+    <li key="1">Item 1</li>
+    <li key="2">Item 2</li>
+    <li key="3">Item 3</li>
+  </ul>
+  <button onclick="scramble()">Scramble order</button>
+
+  <script type="module">
+    import { morph } from './peak.js'
+
+    window.changeText = function() {
+      const clone = window.$text.cloneNode(true)
+      clone.textContent = 'Updated text'
+      morph($text, clone)
+    }
+
+    window.changeAttr = function() {
+      const clone = window.$attr.cloneNode(true)
+      clone.setAttribute('data-test', 'updated')
+      clone.classList.remove('test-class')
+      clone.classList.add('new-class')
+      morph(window.$attr, clone, true)
+    }
+
+    window.toggleBool = function() {
+      const clone = window.$bool.cloneNode(true)
+      if (window.$bool.hasAttribute('checked')) {
+        clone.removeAttribute("checked")
+      } else {
+        clone.setAttribute("checked", "checked")
+      }
+      morph(window.$bool, clone, true)
+    }
+
+    window.addItem = function() {
+      const clone = window.$grow.cloneNode(true)
+      const newItem = document.createElement('li')
+      newItem.textContent = 'Item 3'
+      clone.appendChild(newItem)
+      morph(window.$grow, clone)
+    }
+
+    window.removeItem = function() {
+      const clone = window.$prune.cloneNode(true)
+      clone.querySelector('li:nth-child(2)').remove()
+      morph(window.$prune, clone)
+    }
+
+    window.scramble = function() {
+      const clone = window.$scramble.cloneNode(true)
+      const items = Array.from(clone.querySelectorAll('li'))
+      clone.innerHTML = ''
+      clone.appendChild(items[2])
+      clone.appendChild(items[0])
+      clone.appendChild(items[1])
+      morph(window.$scramble, clone)
+    }
+  </script>
+</body>
+</html>

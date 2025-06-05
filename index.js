@@ -400,6 +400,7 @@ export function morph(l, r, attr) {
 
   const isCustom = e => customElements.get(e.tagName?.toLowerCase())
   const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN
+  const compat = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : e.tagName
   const render = e => isCustom(e) && customElements.upgrade(e) || e.$render?.()
 
   if (attr) {
@@ -421,7 +422,7 @@ export function morph(l, r, attr) {
   while (ls < le || rs < re) {
     if (ls == le) {
       //console.log("LOUT")
-      let match = lc.find((c, i) => c.getAttribute?.('key') === rc[rs].getAttribute('key') && i > ls)
+      let match = lc.find((c, i) => key(c) === key(rc[rs]) && i > ls)
       match ||= (match = rc[rs]) || render(rc[rs])
       l.insertBefore(match, lc[ls])
       rs++
@@ -438,7 +439,7 @@ export function morph(l, r, attr) {
       //console.log("CMATCH REVERSE")
       le-- & re--
     }
-    else if (lc[ls] && rc[rs].children && lc[ls].tagName == rc[rs].tagName) {
+    else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       //console.log("MORPH")
       render(rc[rs])
       morph(lc[ls++], rc[rs++], true)
