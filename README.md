@@ -150,14 +150,10 @@ Refer to an HTML element via `$refs`
 
 Run code when the component is initialized before mounted
 
-### mounted()
-
-Run code when the component is mounted
-
 ```html
 <script>
 export default class {
-  init() {
+  initialize() {
     // initialize the component
     this.pollerId = setInterval(_ => {
       this.items = fetch('/feed')
@@ -167,17 +163,21 @@ export default class {
 </script>
 ```
 
-### destroyed()
+### mounted()
+
+Run code when the component is mounted
+
+### teardown()
 
 Run teardown code when the component is to be destroyed
 
 ```html
 <script>
 export default class {
-  init() {
+  initialize() {
     // ...
   }
-  destroy() {
+  teardown() {
     // clean up when the component is destroyed
     clearInterval(this.pollerId)
   }
@@ -215,6 +215,17 @@ Emit events that bubble up to parent components
   <input @input="$emit('change')">
 </template>
 ```
+
+### $on(eventName, handler)
+
+Handle emitted events native and custom
+
+
+## Lifecycle events
+
+- **`initialize`** - component has been initialized but not yet mounted
+- **`mounted`** - component has been mounted in the document
+- **`teardown`** - component is no longer mounted
 
 ## Component properties
 

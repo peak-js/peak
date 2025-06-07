@@ -1,0 +1,81 @@
+<template>
+  <div>
+    <h1>Lifecycle Test</h1>
+    <div>
+      <h2>Lifecycle Methods and Events</h2>
+      <div data-testid="initialize-method-count" x-text="initializeMethodCount"></div>
+      <div data-testid="initialize-event-count" x-text="initializeEventCount"></div>
+      <div data-testid="mounted-method-count" x-text="mountedMethodCount"></div>
+      <div data-testid="mounted-event-count" x-text="mountedEventCount"></div>
+    </div>
+
+    <hr>
+
+    <div>
+      <h2>Custom Event Handling</h2>
+      <button @click="emitCustomEvent">Emit Custom Event</button>
+      <button @click="emitMultipleEvents">Emit Multiple Events</button>
+      <div data-testid="custom-event-count" x-text="customEventCount"></div>
+      <div data-testid="multiple-events-handled" x-text="multipleEventsHandled"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+
+    this.initializeMethodCount = 1
+    this.initializeEventCount = 0
+    this.mountedMethodCount = 0
+    this.mountedEventCount = 0
+    this.customEventCount = 0
+    this.multipleEventsHandled = 0
+
+    window.lifecycleCounts = {
+      teardownMethodCount: 0,
+      teardownEventCount: 0
+    }
+
+    this.$on('initialize', () => {
+      this.initializeEventCount++
+    })
+
+    this.$on('mounted', () => {
+      this.mountedEventCount++
+    })
+
+    this.$on('teardown', () => {
+      window.lifecycleCounts.teardownEventCount++
+    })
+
+    // Custom event handlers
+    this.$on('custom-event', () => {
+      this.customEventCount++
+    })
+
+    this.$on('multiple-events', () => {
+      this.multipleEventsHandled++
+    })
+  }
+
+  mounted() {
+    this.mountedMethodCount = 1
+  }
+
+  teardown() {
+    window.lifecycleCounts.teardownMethodCount = 1
+  }
+
+  emitCustomEvent() {
+    this.$emit('custom-event')
+  }
+
+  emitMultipleEvents() {
+    // emit the event three times over
+    this.$emit('multiple-events')
+    this.$emit('multiple-events')
+    this.$emit('multiple-events')
+  }
+}
+</script>

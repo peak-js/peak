@@ -54,6 +54,7 @@ export const component = async (tagName, path) => {
       this._state = Object.create(null)
       this._watchers = []
       this.initialize?.()
+      this.$emit('initialize')
       for (const key of Object.keys(this)) {
         this._defineReactiveProperty(key, this[key])
       }
@@ -67,13 +68,18 @@ export const component = async (tagName, path) => {
       this.$render()
       this.$refs = this._refs
       this.mounted?.()
+      this.$emit('mounted')
     }
     disconnectedCallback() {
       delete(instances[this._pk])
-      this.destroyed?.()
+      this.teardown?.()
+      this.$emit('teardown')
     }
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
+    }
+    $on(eventType, handler) {
+      this.addEventListener(eventType, handler)
     }
     $watch(expr, fn, deferred) {
       if (!this._initialized || !deferred) {
