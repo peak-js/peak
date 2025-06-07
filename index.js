@@ -92,6 +92,9 @@ export const component = async (tagName, path) => {
         _contextId = null
       }
     }
+    $defer() {
+      this._queued ||= requestAnimationFrame(_ => this.$render() || delete this._queued)
+    }
     $render() {
       _contextId = this._pk
       this._refs = {}
@@ -496,7 +499,7 @@ function dep(path) {
   const contextId = _contextId
   deps[path] ||= {}
   return deps[path][_contextId] = () => {
-    instances[contextId]?.$render()
+    instances[contextId]?.$defer()
   }
 }
 
