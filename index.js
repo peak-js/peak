@@ -333,7 +333,7 @@ function render(template, ctx) {
           el.removeAttribute(name)
         } else if (typeof value != 'object') {
           if (name == 'class') {
-            value += ' ' + el.getAttribute('class') || ''
+            value = (value || '') + (el.className ? ' ' + el.className : '')
           }
           el.setAttribute(name, value)
         } else {
