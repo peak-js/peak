@@ -35,14 +35,29 @@ export const router = Object.assign(new EventTarget, {
 
 export const component = async (tagName, path) => {
 
-  const src = await fetch(path).then(r => r.text())
+  if (!path.startsWith('/')) path = '/' + path
+  
+  // Use the vite-html-slurper if available
+  const slurper = window.getComponentHTML ? window : { getComponentHTML: p => window.__pkcache?.[p] }
+  
+  if (slurper.getComponentHTML?.(path)) {
+    console.log("CACHED", path)
+  } else {
+    console.log("FETCH", path)
+  }
+  
+  const src = slurper.getComponentHTML?.(path) || await fetch(path).then(r => r.text())
   const doc = parser.parseFromString(src, 'text/html')
   const _template = doc.querySelector('template')
   const template = document.createElement('div')
-  template.innerHTML = `${_template.innerHTML}`
+  template.innerHTML = `${_template?.innerHTML || ''}`
   const style = doc.querySelector('style')?.textContent
-  const script = doc.querySelector('script')?.textContent 
-  const _class = (await loadModule(script, path)) || new Function
+  const script = doc.querySelector('script')?.textContent
+  
+  // Use the getComponentClass helper if available
+  const _class = window.getComponentClass 
+    ? await window.getComponentClass(path, script)
+    : (await loadModule(script, path)) || new Function
 
   const instance = new _class
 
@@ -583,5 +598,8 @@ function isBoolAttr(el, name) {
 function hsh(str) {
   return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0)
 }
+
+// Initialize an empty cache if it doesn't exist yet
+window.__pkcache = window.__pkcache || {}
 
 export const store = observable({})

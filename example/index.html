@@ -1,4 +1,12 @@
-<link href="style.css" rel="stylesheet">
+<head>
+  <link href="style.css" rel="stylesheet">
+  <script type="module">
+    import "virtual:components";
+    import { getComponentHTML, getComponentClass } from './vite-html-slurper.js';
+    window.getComponentHTML = getComponentHTML;
+    window.getComponentClass = getComponentClass;
+  </script>
+</head>
 
 <x-router-view></x-router-view>
 
@@ -19,4 +27,3 @@ router.on('navigation', (route) => console.log('navigation', route))
 router.on('notFound', (route) => console.log('not-found', route))
 
 </script>
-
