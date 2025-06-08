@@ -3,7 +3,7 @@ import path from 'path';
 import { parse as parseHtml } from 'node-html-parser';
 
 export default function ({ dirs = ['components','views'] } = {}) {
-  const virtualModuleId = 'virtual:components';
+  const virtualModuleId = 'virtual:peak-components';
   const resolvedVirtualModuleId = '\0' + virtualModuleId;
   
   // Generate JS modules for components
@@ -92,15 +92,60 @@ export default function ({ dirs = ['components','views'] } = {}) {
     for (const { virtualPath, jsPath } of componentPaths) {
       const varName = `comp_${virtualPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
       imports.push(`import * as ${varName} from '${jsPath}';`);
-      registrations.push(`registerComponent('${virtualPath}', ${varName});`);
+      registrations.push(`componentModules['${virtualPath}'] = ${varName};`);
       assignments.push(`  '${virtualPath}': ${varName}.html`);
     }
     
+    // Inline the HTML slurper functionality
+    const slurperCode = `
+      // Map of Vite-bundled component modules
+      const componentModules = {};
+      
+      // Get HTML content for a component
+      function getComponentHTML(path) {
+        // If we have a bundled module for this component, use its HTML content
+        if (componentModules[path]) {
+          if (componentModules[path].html) {
+            console.log(\`[peak] Using bundled HTML for \${path}\`);
+            return componentModules[path].html;
+          }
+        }
+        
+        // Otherwise, fall back to the __pkcache or fetch
+        if (window.__pkcache?.[path]) {
+          console.log(\`[peak] Using cached HTML for \${path}\`);
+        }
+        return window.__pkcache?.[path];
+      }
+      
+      // Get a component class
+      async function getComponentClass(path, source) {
+        // If we have a bundled module for this component, use its default export
+        if (componentModules[path]) {
+          console.log(\`[peak] Using bundled class for \${path}\`);
+          return componentModules[path].default;
+        }
+        
+        // Otherwise, use the traditional module loading approach
+        console.log(\`[peak] Loading class for \${path} from source\`);
+        return await window.loadModule?.(source, path);
+      }
+      
+      // For debugging
+      function listRegisteredComponents() {
+        return Object.keys(componentModules);
+      }
+      
+      // Initialize __pkcache if not exists
+      window.__pkcache = window.__pkcache || {};
+    `;
+    
     return `
-      import { registerComponent, getComponentHTML, getComponentClass } from './vite-html-slurper.js';
+      ${slurperCode}
+      
       ${imports.join('\n')}
       
-      // Register components with the slurper
+      // Register components
       ${registrations.join('\n')}
       
       // Legacy support for direct HTML access
@@ -108,9 +153,10 @@ export default function ({ dirs = ['components','views'] } = {}) {
         ${assignments.join(',\n')}
       };
       
-      // Expose slurper methods globally
+      // Expose methods globally
       window.getComponentHTML = getComponentHTML;
       window.getComponentClass = getComponentClass;
+      window.listRegisteredComponents = listRegisteredComponents;
     `;
   };
   
@@ -122,6 +168,19 @@ export default function ({ dirs = ['components','views'] } = {}) {
     buildStart() {
       // Generate component modules
       componentPaths = createComponentModules();
+    },
+    
+    buildEnd() {
+      // Clean up the component directory at the end of the build
+      try {
+        const componentsDir = path.resolve(process.cwd(), '.peak-components');
+        if (fs.existsSync(componentsDir)) {
+          fs.rmSync(componentsDir, { recursive: true, force: true });
+          console.log('[peak] Cleaned up component directory');
+        }
+      } catch (e) {
+        console.warn('[peak] Failed to clean up component directory:', e);
+      }
     },
     
     resolveId(id) {
