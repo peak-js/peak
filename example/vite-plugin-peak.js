@@ -97,7 +97,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
     }
     
     return `
-      import { registerComponent } from './vite-html-slurper.js';
+      import { registerComponent, getComponentHTML, getComponentClass } from './vite-html-slurper.js';
       ${imports.join('\n')}
       
       // Register components with the slurper
@@ -107,6 +107,10 @@ export default function ({ dirs = ['components','views'] } = {}) {
       window.__pkcache = { 
         ${assignments.join(',\n')}
       };
+      
+      // Expose slurper methods globally
+      window.getComponentHTML = getComponentHTML;
+      window.getComponentClass = getComponentClass;
     `;
   };
   
