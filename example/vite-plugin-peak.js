@@ -6,6 +6,9 @@ export default function ({ dirs = ['components','views'] } = {}) {
   const virtualModuleId = 'virtual:peak-components';
   const resolvedVirtualModuleId = '\0' + virtualModuleId;
   
+  // Component paths to file information mapping
+  const componentInfo = new Map();
+  
   // Generate JS modules for components
   const createComponentModules = () => {
     // Ensure component directory exists
@@ -39,6 +42,12 @@ export default function ({ dirs = ['components','views'] } = {}) {
         const template = templateTag ? templateTag.innerHTML.trim() : '';
         const style = styleTag ? styleTag.textContent.trim() : '';
         let script = scriptTag ? scriptTag.textContent.trim() : '';
+        
+        // Store component info for HMR
+        componentInfo.set(virtualPath, {
+          filePath,
+          tagName: `${slugify(virtualPath.replace(/^[^a-z]+|[^a-z]+$|\.html$/g, ''))}-${hsh(virtualPath)}`
+        });
         
         // Create a JS module for this component
         const jsContent = [];
@@ -81,6 +90,23 @@ export default function ({ dirs = ['components','views'] } = {}) {
     }
     
     return componentPaths;
+  };
+  
+  // Helper function to slugify a string (copied from peak.js)
+  function slugify(str) {
+    return str.toLowerCase().replace(/[^\w\-]+/g, '-');
+  }
+  
+  // Helper function to hash a string (copied from peak.js)
+  function hsh(str) {
+    return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0);
+  }
+  
+  // Extract style from HTML content
+  const extractStyle = (content) => {
+    const parsed = parseHtml(content);
+    const styleTag = parsed.querySelector('style');
+    return styleTag ? styleTag.textContent.trim() : '';
   };
   
   // Main virtual module content
@@ -136,9 +162,52 @@ export default function ({ dirs = ['components','views'] } = {}) {
         return Object.keys(componentModules);
       }
       
+      // HMR support for updating component styles
+      function updateComponentStyle(path, newStyle) {
+        const tagName = window.__pkComponentTags?.[path];
+        if (!tagName) {
+          console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
+          return false;
+        }
+        
+        // Find the style element for this component
+        const styleSelector = \`style[data-peak-component="\${tagName}"]\`;
+        const styleEl = document.head.querySelector(styleSelector);
+        if (styleEl) {
+          console.log(\`[peak] HMR: Updating styles for \${path}\`);
+          styleEl.textContent = \`
+            @layer \${tagName} {
+              \${tagName} {
+                \${newStyle};
+              }
+              \${tagName} [x-scope],
+              \${tagName} [x-scope] * {
+                all: revert-layer;
+              }
+            }
+          \`;
+          return true;
+        } else {
+          console.warn(\`[peak] HMR: Style element not found for \${path}\`);
+          return false;
+        }
+      }
+      
       // Initialize __pkcache if not exists
       window.__pkcache = window.__pkcache || {};
+      
+      // Track component tags for HMR
+      window.__pkComponentTags = {};
     `;
+    
+    // Add tag mapping for HMR
+    const tagMappings = componentPaths.map(({ virtualPath }) => {
+      const info = componentInfo.get(virtualPath);
+      if (info && info.tagName) {
+        return `  '${virtualPath}': '${info.tagName}'`;
+      }
+      return '';
+    }).filter(Boolean);
     
     return `
       ${slurperCode}
@@ -153,10 +222,16 @@ export default function ({ dirs = ['components','views'] } = {}) {
         ${assignments.join(',\n')}
       };
       
+      // Register component tags for HMR
+      window.__pkComponentTags = {
+        ${tagMappings.join(',\n')}
+      };
+      
       // Expose methods globally
       window.getComponentHTML = getComponentHTML;
       window.getComponentClass = getComponentClass;
       window.listRegisteredComponents = listRegisteredComponents;
+      window.updateComponentStyle = updateComponentStyle;
     `;
   };
   
@@ -202,6 +277,79 @@ export default function ({ dirs = ['components','views'] } = {}) {
       config.optimizeDeps.entries.push(virtualModuleId);
       
       return config;
+    },
+    
+    handleHotUpdate(ctx) {
+      // Only process HTML files from our component directories
+      if (!ctx.file.endsWith('.html')) return;
+      
+      // Check if this is one of our component files
+      let isComponentFile = false;
+      let componentPath = null;
+      
+      for (const dir of dirs) {
+        const dirPath = path.resolve(process.cwd(), dir);
+        if (ctx.file.startsWith(dirPath)) {
+          const relativePath = path.relative(dirPath, ctx.file);
+          componentPath = `/${dir}/${relativePath}`;
+          isComponentFile = true;
+          break;
+        }
+      }
+      
+      if (!isComponentFile) return;
+      
+      // Extract the style from the updated file
+      const content = fs.readFileSync(ctx.file, 'utf8');
+      const newStyle = extractStyle(content);
+      
+      // Send HMR update to update the style in the browser
+      ctx.server.ws.send({
+        type: 'custom',
+        event: 'peak:style-update',
+        data: {
+          path: componentPath,
+          style: newStyle
+        }
+      });
+      
+      // Regenerate the component module for future loads
+      createComponentModules();
+      
+      // Return an empty array to tell Vite we'll handle the update ourselves
+      return [];
+    },
+    
+    transformIndexHtml(html) {
+      // Inject HMR handler for component styles
+      return {
+        html,
+        tags: [
+          {
+            tag: 'script',
+            injectTo: 'body',
+            children: `
+              if (import.meta.hot) {
+                import.meta.hot.on('peak:style-update', ({ path, style }) => {
+                  if (window.updateComponentStyle) {
+                    const success = window.updateComponentStyle(path, style);
+                    if (success) {
+                      console.log('[peak] HMR: Successfully updated styles for ' + path);
+                    } else {
+                      console.warn('[peak] HMR: Failed to update styles for ' + path);
+                      // Force full reload if style update failed
+                      import.meta.hot.invalidate();
+                    }
+                  } else {
+                    console.warn('[peak] HMR: updateComponentStyle not available, forcing full reload');
+                    import.meta.hot.invalidate();
+                  }
+                });
+              }
+            `
+          }
+        ]
+      };
     }
   };
 }

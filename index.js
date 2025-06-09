@@ -140,7 +140,7 @@ export const component = async (tagName, path) => {
   customElements.define(tagName, _constructor)
 
   const scopedStyle = `
-    <style>
+    <style data-peak-component="${tagName}">
       @layer ${tagName} {
         ${tagName} {
           ${style};
