@@ -120,17 +120,17 @@ export default function ({ dirs = ['components','views'] } = {}) {
   const generateMainModule = (componentPaths) => {
     const imports = [];
     const registrations = [];
-    const assignments = [];
-    
     for (const { virtualPath, jsPath } of componentPaths) {
       const varName = `comp_${virtualPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
       imports.push(`import * as ${varName} from '${jsPath}';`);
       registrations.push(`componentModules['${virtualPath}'] = ${varName};`);
-      assignments.push(`  '${virtualPath}': ${varName}.html`);
     }
     
     // Inline the HTML slurper functionality
     const slurperCode = `
+      // Initialize peak namespace if not exists
+      window.__peak = window.__peak || {};
+      
       // Map of Vite-bundled component modules
       const componentModules = {};
       
@@ -139,19 +139,13 @@ export default function ({ dirs = ['components','views'] } = {}) {
       
       // Get HTML content for a component
       function getComponentHTML(path) {
-        // If we have a bundled module for this component, use its HTML content
-        if (componentModules[path]) {
-          if (componentModules[path].html) {
-            console.log(\`[peak] Using bundled HTML for \${path}\`);
-            return componentModules[path].html;
-          }
+        // Get component from bundled modules
+        if (componentModules[path]?.html) {
+          return componentModules[path].html;
         }
         
-        // Otherwise, fall back to the __pkcache or fetch
-        if (window.__pkcache?.[path]) {
-          console.log(\`[peak] Using cached HTML for \${path}\`);
-        }
-        return window.__pkcache?.[path];
+        console.warn(\`[peak] Component not found in bundle: \${path}\`);
+        return null;
       }
       
       // Get a component class
@@ -191,7 +185,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
       
       // HMR support for updating component styles
       function updateComponentStyle(path, newStyle) {
-        const tagName = window.__pkComponentTags?.[path];
+        const tagName = window.__peak.componentTags?.[path];
         if (!tagName) {
           console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
           return false;
@@ -222,7 +216,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
       
       // HMR support for updating component scripts
       async function updateComponentScript(path, newScript) {
-        const tagName = window.__pkComponentTags?.[path];
+        const tagName = window.__peak.componentTags?.[path];
         if (!tagName) {
           console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
           return false;
@@ -278,7 +272,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
       
       // HMR support for updating component templates
       function updateComponentTemplate(path, template, html) {
-        const tagName = window.__pkComponentTags?.[path];
+        const tagName = window.__peak.componentTags?.[path];
         if (!tagName) {
           console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
           return false;
@@ -289,11 +283,6 @@ export default function ({ dirs = ['components','views'] } = {}) {
           if (componentModules[path]) {
             componentModules[path].template = template;
             componentModules[path].html = html;
-          }
-          
-          // Update in cache for new component instantiations
-          if (window.__pkcache) {
-            window.__pkcache[path] = html;
           }
           
           // Re-render all instances
@@ -313,11 +302,10 @@ export default function ({ dirs = ['components','views'] } = {}) {
         }
       }
       
-      // Initialize __pkcache if not exists
-      window.__pkcache = window.__pkcache || {};
-      
-      // Track component tags for HMR
-      window.__pkComponentTags = {};
+      // Move everything to __peak namespace
+      window.__peak.componentModules = componentModules;
+      window.__peak.componentInstances = componentInstances;
+      window.__peak.componentTags = {};
     `;
     
     // Add tag mapping for HMR
@@ -337,24 +325,19 @@ export default function ({ dirs = ['components','views'] } = {}) {
       // Register components
       ${registrations.join('\n')}
       
-      // Legacy support for direct HTML access
-      window.__pkcache = { 
-        ${assignments.join(',\n')}
-      };
-      
       // Register component tags for HMR
-      window.__pkComponentTags = {
+      window.__peak.componentTags = {
         ${tagMappings.join(',\n')}
       };
       
-      // Expose methods globally
-      window.getComponentHTML = getComponentHTML;
-      window.getComponentClass = getComponentClass;
-      window.listRegisteredComponents = listRegisteredComponents;
-      window.registerComponentInstance = registerComponentInstance;
-      window.updateComponentStyle = updateComponentStyle;
-      window.updateComponentScript = updateComponentScript;
-      window.updateComponentTemplate = updateComponentTemplate;
+      // Expose methods in peak namespace
+      window.__peak.getComponentHTML = getComponentHTML;
+      window.__peak.getComponentClass = getComponentClass;
+      window.__peak.listComponents = listRegisteredComponents;
+      window.__peak.registerInstance = registerComponentInstance;
+      window.__peak.updateStyle = updateComponentStyle;
+      window.__peak.updateScript = updateComponentScript;
+      window.__peak.updateTemplate = updateComponentTemplate;
     `;
   };
   
@@ -482,8 +465,8 @@ export default function ({ dirs = ['components','views'] } = {}) {
               if (import.meta.hot) {
                 // Style updates
                 import.meta.hot.on('peak:style-update', ({ path, style }) => {
-                  if (window.updateComponentStyle) {
-                    const success = window.updateComponentStyle(path, style);
+                  if (window.__peak?.updateStyle) {
+                    const success = window.__peak.updateStyle(path, style);
                     if (success) {
                       console.log('[peak] HMR: Successfully updated styles for ' + path);
                     } else {
@@ -492,15 +475,15 @@ export default function ({ dirs = ['components','views'] } = {}) {
                       import.meta.hot.invalidate();
                     }
                   } else {
-                    console.warn('[peak] HMR: updateComponentStyle not available, forcing full reload');
+                    console.warn('[peak] HMR: Style update handler not available, forcing full reload');
                     import.meta.hot.invalidate();
                   }
                 });
                 
                 // Script updates
                 import.meta.hot.on('peak:script-update', async ({ path, script }) => {
-                  if (window.updateComponentScript) {
-                    const success = await window.updateComponentScript(path, script);
+                  if (window.__peak?.updateScript) {
+                    const success = await window.__peak.updateScript(path, script);
                     if (success) {
                       console.log('[peak] HMR: Successfully updated script for ' + path);
                     } else {
@@ -509,15 +492,15 @@ export default function ({ dirs = ['components','views'] } = {}) {
                       import.meta.hot.invalidate();
                     }
                   } else {
-                    console.warn('[peak] HMR: updateComponentScript not available, forcing full reload');
+                    console.warn('[peak] HMR: Script update handler not available, forcing full reload');
                     import.meta.hot.invalidate();
                   }
                 });
                 
                 // Template updates
                 import.meta.hot.on('peak:template-update', ({ path, template, html }) => {
-                  if (window.updateComponentTemplate) {
-                    const success = window.updateComponentTemplate(path, template, html);
+                  if (window.__peak?.updateTemplate) {
+                    const success = window.__peak.updateTemplate(path, template, html);
                     if (success) {
                       console.log('[peak] HMR: Successfully updated template for ' + path);
                     } else {
@@ -526,7 +509,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
                       import.meta.hot.invalidate();
                     }
                   } else {
-                    console.warn('[peak] HMR: updateComponentTemplate not available, forcing full reload');
+                    console.warn('[peak] HMR: Template update handler not available, forcing full reload');
                     import.meta.hot.invalidate();
                   }
                 });

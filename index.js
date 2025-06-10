@@ -37,10 +37,8 @@ export const component = async (tagName, path) => {
 
   if (!path.startsWith('/')) path = '/' + path
   
-  // Use the vite-html-slurper if available
-  const slurper = window.getComponentHTML ? window : { getComponentHTML: p => window.__pkcache?.[p] }
-  
-  const src = slurper.getComponentHTML?.(path) || await fetch(path).then(r => r.text())
+  // Get HTML content from Peak module system or fetch
+  const src = window.__peak?.getComponentHTML?.(path) || await fetch(path).then(r => r.text())
   const doc = parser.parseFromString(src, 'text/html')
   const _template = doc.querySelector('template')
   const template = document.createElement('div')
@@ -49,8 +47,8 @@ export const component = async (tagName, path) => {
   const script = doc.querySelector('script')?.textContent
   
   // Use the getComponentClass helper if available
-  const _class = window.getComponentClass 
-    ? await window.getComponentClass(path, script)
+  const _class = window.__peak?.getComponentClass 
+    ? await window.__peak.getComponentClass(path, script)
     : (await loadModule(script, path)) || new Function
 
   const instance = new _class
@@ -71,8 +69,8 @@ export const component = async (tagName, path) => {
       this.setAttribute('x-scope', true);
       
       // Register instance for HMR if the function exists
-      if (window.registerComponentInstance) {
-        window.registerComponentInstance(this, this.tagName.toLowerCase())
+      if (window.__peak?.registerInstance) {
+        window.__peak.registerInstance(this, this.tagName.toLowerCase())
       }
     }
     connectedCallback() {
@@ -597,8 +595,5 @@ function isBoolAttr(el, name) {
 function hsh(str) {
   return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0)
 }
-
-// Initialize an empty cache if it doesn't exist yet
-window.__pkcache = window.__pkcache || {}
 
 export const store = observable({})
