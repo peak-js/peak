@@ -15,7 +15,7 @@
         <template x-for="label in labels">
           <button
             :class="this.filter == this.label && 'selected'"
-            class="mx-2"
+            class="mx-4"
             @click="setFilter"
             :data-filter="label"
             x-text="label"

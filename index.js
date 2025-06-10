@@ -40,12 +40,6 @@ export const component = async (tagName, path) => {
   // Use the vite-html-slurper if available
   const slurper = window.getComponentHTML ? window : { getComponentHTML: p => window.__pkcache?.[p] }
   
-  if (slurper.getComponentHTML?.(path)) {
-    console.log("CACHED", path)
-  } else {
-    console.log("FETCH", path)
-  }
-  
   const src = slurper.getComponentHTML?.(path) || await fetch(path).then(r => r.text())
   const doc = parser.parseFromString(src, 'text/html')
   const _template = doc.querySelector('template')
@@ -75,6 +69,11 @@ export const component = async (tagName, path) => {
       }
       this._initialized = true
       this.setAttribute('x-scope', true);
+      
+      // Register instance for HMR if the function exists
+      if (window.registerComponentInstance) {
+        window.registerComponentInstance(this, this.tagName.toLowerCase())
+      }
     }
     connectedCallback() {
       for (const [expr, fn] of this._watchers) {
@@ -87,6 +86,7 @@ export const component = async (tagName, path) => {
     }
     disconnectedCallback() {
       delete(instances[this._pk])
+      this._pkUnregister?.() // Clean up HMR registration if exists
       this.teardown?.()
       this.$emit('teardown')
     }
@@ -514,7 +514,7 @@ function dep(path) {
   const contextId = _contextId
   deps[path] ||= {}
   return deps[path][_contextId] = () => {
-    instances[contextId]?.$defer()
+    instances[contextId]?.$defer?.()
   }
 }
 
@@ -575,7 +575,6 @@ function clsxToVal(mix) {
 
   return str;
 }
-
 
 function getObjId(o) {
   o = o.__target__ || o

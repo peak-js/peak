@@ -102,11 +102,18 @@ export default function ({ dirs = ['components','views'] } = {}) {
     return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0);
   }
   
-  // Extract style from HTML content
-  const extractStyle = (content) => {
+  // Extract parts from HTML content
+  const extractParts = (content) => {
     const parsed = parseHtml(content);
+    const scriptTag = parsed.querySelector('script');
     const styleTag = parsed.querySelector('style');
-    return styleTag ? styleTag.textContent.trim() : '';
+    const templateTag = parsed.querySelector('template');
+    
+    return {
+      script: scriptTag ? scriptTag.textContent.trim() : '',
+      style: styleTag ? styleTag.textContent.trim() : '',
+      template: templateTag ? templateTag.innerHTML.trim() : ''
+    };
   };
   
   // Main virtual module content
@@ -126,6 +133,9 @@ export default function ({ dirs = ['components','views'] } = {}) {
     const slurperCode = `
       // Map of Vite-bundled component modules
       const componentModules = {};
+      
+      // Map of component instances for HMR
+      const componentInstances = {};
       
       // Get HTML content for a component
       function getComponentHTML(path) {
@@ -162,6 +172,23 @@ export default function ({ dirs = ['components','views'] } = {}) {
         return Object.keys(componentModules);
       }
       
+      // Register component instance for HMR
+      function registerComponentInstance(instance, tagName) {
+        componentInstances[tagName] = componentInstances[tagName] || new Set();
+        componentInstances[tagName].add(instance);
+        
+        // Clean up when element is removed
+        const cleanup = () => {
+          if (componentInstances[tagName]) {
+            componentInstances[tagName].delete(instance);
+          }
+        };
+        
+        // Add removal listener
+        if (instance._pkUnregister) instance._pkUnregister();
+        instance._pkUnregister = cleanup;
+      }
+      
       // HMR support for updating component styles
       function updateComponentStyle(path, newStyle) {
         const tagName = window.__pkComponentTags?.[path];
@@ -189,6 +216,99 @@ export default function ({ dirs = ['components','views'] } = {}) {
           return true;
         } else {
           console.warn(\`[peak] HMR: Style element not found for \${path}\`);
+          return false;
+        }
+      }
+      
+      // HMR support for updating component scripts
+      async function updateComponentScript(path, newScript) {
+        const tagName = window.__pkComponentTags?.[path];
+        if (!tagName) {
+          console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
+          return false;
+        }
+        
+        try {
+          // Load the new component class using the same function peak.js uses
+          const NewClass = await (window.loadModule ? 
+            window.loadModule(newScript, path) : 
+            componentModules[path]?.default);
+            
+          if (!NewClass) {
+            console.warn(\`[peak] HMR: Failed to load new class for \${path}\`);
+            return false;
+          }
+          
+          // Update in component modules registry
+          if (componentModules[path]) {
+            componentModules[path].default = NewClass;
+          }
+          
+          // Get the existing class constructor
+          const Constructor = customElements.get(tagName);
+          if (!Constructor) {
+            console.warn(\`[peak] HMR: Cannot find constructor for \${tagName}\`);
+            return false;
+          }
+          
+          // Update prototype methods on the existing class
+          Object.getOwnPropertyNames(NewClass.prototype)
+            .filter(n => n !== 'constructor')
+            .forEach(n => {
+              const descriptor = Object.getOwnPropertyDescriptor(NewClass.prototype, n);
+              Object.defineProperty(Constructor.prototype, n, descriptor);
+            });
+          
+          // Re-render all instances
+          const instances = document.querySelectorAll(tagName);
+          instances.forEach(instance => {
+            if (typeof instance.$render === 'function') {
+              console.log(\`[peak] HMR: Re-rendering \${tagName} instance\`);
+              instance.$render();
+            }
+          });
+          
+          console.log(\`[peak] HMR: Successfully updated script for \${path} (\${instances.length} instances)\`);
+          return true;
+        } catch (err) {
+          console.error(\`[peak] HMR: Error updating script for \${path}\`, err);
+          return false;
+        }
+      }
+      
+      // HMR support for updating component templates
+      function updateComponentTemplate(path, template, html) {
+        const tagName = window.__pkComponentTags?.[path];
+        if (!tagName) {
+          console.warn(\`[peak] HMR: Cannot find tag for component: \${path}\`);
+          return false;
+        }
+        
+        try {
+          // Update in component modules registry
+          if (componentModules[path]) {
+            componentModules[path].template = template;
+            componentModules[path].html = html;
+          }
+          
+          // Update in cache for new component instantiations
+          if (window.__pkcache) {
+            window.__pkcache[path] = html;
+          }
+          
+          // Re-render all instances
+          const instances = document.querySelectorAll(tagName);
+          instances.forEach(instance => {
+            if (typeof instance.$render === 'function') {
+              console.log(\`[peak] HMR: Re-rendering \${tagName} instance with new template\`);
+              instance.$render();
+            }
+          });
+          
+          console.log(\`[peak] HMR: Successfully updated template for \${path} (\${instances.length} instances)\`);
+          return true;
+        } catch (err) {
+          console.error(\`[peak] HMR: Error updating template for \${path}\`, err);
           return false;
         }
       }
@@ -231,7 +351,10 @@ export default function ({ dirs = ['components','views'] } = {}) {
       window.getComponentHTML = getComponentHTML;
       window.getComponentClass = getComponentClass;
       window.listRegisteredComponents = listRegisteredComponents;
+      window.registerComponentInstance = registerComponentInstance;
       window.updateComponentStyle = updateComponentStyle;
+      window.updateComponentScript = updateComponentScript;
+      window.updateComponentTemplate = updateComponentTemplate;
     `;
   };
   
@@ -299,19 +422,46 @@ export default function ({ dirs = ['components','views'] } = {}) {
       
       if (!isComponentFile) return;
       
-      // Extract the style from the updated file
+      // Extract all parts from the updated file
       const content = fs.readFileSync(ctx.file, 'utf8');
-      const newStyle = extractStyle(content);
+      const { script, style, template } = extractParts(content);
       
-      // Send HMR update to update the style in the browser
+      // Send HMR updates to the browser
+      
+      // Always update style if it exists
       ctx.server.ws.send({
         type: 'custom',
         event: 'peak:style-update',
         data: {
           path: componentPath,
-          style: newStyle
+          style
         }
       });
+      
+      // Update script if it exists
+      if (script) {
+        ctx.server.ws.send({
+          type: 'custom',
+          event: 'peak:script-update',
+          data: {
+            path: componentPath,
+            script
+          }
+        });
+      }
+      
+      // Update template if it exists
+      if (template) {
+        ctx.server.ws.send({
+          type: 'custom',
+          event: 'peak:template-update',
+          data: {
+            path: componentPath,
+            template,
+            html: content
+          }
+        });
+      }
       
       // Regenerate the component module for future loads
       createComponentModules();
@@ -321,7 +471,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
     },
     
     transformIndexHtml(html) {
-      // Inject HMR handler for component styles
+      // Inject HMR handlers for component updates
       return {
         html,
         tags: [
@@ -330,6 +480,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
             injectTo: 'body',
             children: `
               if (import.meta.hot) {
+                // Style updates
                 import.meta.hot.on('peak:style-update', ({ path, style }) => {
                   if (window.updateComponentStyle) {
                     const success = window.updateComponentStyle(path, style);
@@ -342,6 +493,40 @@ export default function ({ dirs = ['components','views'] } = {}) {
                     }
                   } else {
                     console.warn('[peak] HMR: updateComponentStyle not available, forcing full reload');
+                    import.meta.hot.invalidate();
+                  }
+                });
+                
+                // Script updates
+                import.meta.hot.on('peak:script-update', async ({ path, script }) => {
+                  if (window.updateComponentScript) {
+                    const success = await window.updateComponentScript(path, script);
+                    if (success) {
+                      console.log('[peak] HMR: Successfully updated script for ' + path);
+                    } else {
+                      console.warn('[peak] HMR: Failed to update script for ' + path);
+                      // Force full reload if script update failed
+                      import.meta.hot.invalidate();
+                    }
+                  } else {
+                    console.warn('[peak] HMR: updateComponentScript not available, forcing full reload');
+                    import.meta.hot.invalidate();
+                  }
+                });
+                
+                // Template updates
+                import.meta.hot.on('peak:template-update', ({ path, template, html }) => {
+                  if (window.updateComponentTemplate) {
+                    const success = window.updateComponentTemplate(path, template, html);
+                    if (success) {
+                      console.log('[peak] HMR: Successfully updated template for ' + path);
+                    } else {
+                      console.warn('[peak] HMR: Failed to update template for ' + path);
+                      // Force full reload if template update failed
+                      import.meta.hot.invalidate();
+                    }
+                  } else {
+                    console.warn('[peak] HMR: updateComponentTemplate not available, forcing full reload');
                     import.meta.hot.invalidate();
                   }
                 });
