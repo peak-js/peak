@@ -3,6 +3,7 @@ const contexts = new WeakMap
 const handlers = {}
 const instances = {}
 const objs = new WeakMap
+const { getComponentHTML, getComponentClass } = window.__peak || {}
 
 export const route = {}
 
@@ -67,11 +68,7 @@ export const component = async (tagName, path) => {
       }
       this._initialized = true
       this.setAttribute('x-scope', true);
-      
-      // Register instance for HMR if the function exists
-      if (window.__peak?.registerInstance) {
-        window.__peak.registerInstance(this, this.tagName.toLowerCase())
-      }
+      window.__peak.registerInstance?.(this, this.tagName.toLowerCase())
     }
     connectedCallback() {
       for (const [expr, fn] of this._watchers) {
@@ -84,7 +81,7 @@ export const component = async (tagName, path) => {
     }
     disconnectedCallback() {
       delete(instances[this._pk])
-      this._pkUnregister?.() // Clean up HMR registration if exists
+      this._unregister?.()
       this.teardown?.()
       this.$emit('teardown')
     }
