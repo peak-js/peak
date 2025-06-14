@@ -233,7 +233,7 @@ Handle emitted events native and custom
 
 Refer to the event being handled
 
-```
+```html
 <template>
   <button @click="incrementBy(10)">Add 10</button>
 </template>
