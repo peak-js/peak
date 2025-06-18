@@ -68,7 +68,7 @@ export const component = async (tagName, path) => {
       }
       this._initialized = true
       this.setAttribute('x-scope', true);
-      window.__peak.registerInstance?.(this, this.tagName.toLowerCase())
+      window.__peak?.registerInstance?.(this, this.tagName.toLowerCase())
     }
     connectedCallback() {
       for (const [expr, fn] of this._watchers) {
@@ -97,7 +97,7 @@ export const component = async (tagName, path) => {
       }
       if (this._initialized) {
         _contextId = rand()
-        instances[_contextId] = { $render() { fn() } }
+        instances[_contextId] = { $defer() { fn() } }
         evalInContext(this, expr)
         _contextId = null
       }
