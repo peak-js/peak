@@ -1,0 +1,88 @@
+<template>
+  <div>
+    <h1>$watch Test Component</h1>
+    
+    <!-- Basic property watch test -->
+    <div data-testid="basic-test">
+      <button data-testid="increment-btn" @click="count++">Count: <span x-text="count"></span></button>
+      <div data-testid="watch-log" x-text="watchLog"></div>
+    </div>
+
+    <!-- Computed property watch test -->
+    <div data-testid="computed-test">
+      <button data-testid="toggle-flag" @click="flag = !flag">Flag: <span x-text="flag"></span></button>
+      <div data-testid="computed-log" x-text="computedLog"></div>
+    </div>
+
+    <!-- Object property watch test -->
+    <div data-testid="object-test">
+      <button data-testid="update-user" @click="updateUser">Update User</button>
+      <div data-testid="user-log" x-text="userLog"></div>
+      <div data-testid="user-display" x-text="user.name"></div>
+    </div>
+
+    <!-- Multiple watches on same property -->
+    <div data-testid="multiple-test">
+      <button data-testid="change-title" @click="updateTitle">Title: <span x-text="buttonTitle"></span></button>
+      <div data-testid="watch1-log" x-text="watch1Log"></div>
+      <div data-testid="watch2-log" x-text="watch2Log"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    // Basic property
+    this.count = 0
+    this.watchLog = 'No changes yet'
+    
+    // Computed property  
+    this.flag = false
+    this.computedLog = 'No computed changes yet'
+    
+    // Object property
+    this.user = { name: 'John', age: 30 }
+    this.userLog = 'No user changes yet'
+    
+    // Multiple watches
+    this.buttonTitle = 'Initial Title'
+    this.watch1Log = 'Watch1: No changes'
+    this.watch2Log = 'Watch2: No changes'
+
+    // Set up watches
+    this.$watch('count', () => {
+      this.watchLog = `Count changed to: ${this.count}`
+    })
+
+    this.$watch('computedValue', () => {
+      this.computedLog = `Computed changed to: ${this.computedValue}`
+    })
+
+    this.$watch('user.name', () => {
+      this.userLog = `User name changed to: ${this.user.name}`
+    })
+    
+    // Multiple watches on same property
+    this.$watch('buttonTitle', () => {
+      this.watch1Log = `Watch1: Title is now ${this.buttonTitle}`
+    })
+    
+    this.$watch('buttonTitle', () => {
+      this.watch2Log = `Watch2: Title changed to ${this.buttonTitle}`
+    })
+  }
+
+  get computedValue() {
+    return this.flag ? 'TRUE' : 'FALSE'
+  }
+
+  updateTitle() {
+    this.buttonTitle = 'Changed!'
+  }
+
+  updateUser() {
+    this.user.name = 'Jane'
+  }
+}
+</script>
