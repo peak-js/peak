@@ -1,0 +1,122 @@
+<template>
+  <div>
+    <h1>Async Lifecycle Test</h1>
+    
+    <div>
+      <h2>Basic Async Properties</h2>
+      <div data-testid="async-items" x-text="this.items?.length || 'Loading...'"></div>
+      <div data-testid="async-user" x-text="this.user?.name || 'Loading...'"></div>
+      <div data-testid="async-status" x-text="status"></div>
+    </div>
+
+    <div>
+      <h2>Async Properties with Rendering</h2>
+      <ul data-testid="items-list">
+        <li x-for="item in items" x-text="item.name"></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Multiple Async Operations</h2>
+      <div data-testid="fast-data" x-text="this.fastData || 'Loading fast...'"></div>
+      <div data-testid="slow-data" x-text="this.slowData || 'Loading slow...'"></div>
+      <div data-testid="error-data" x-text="this.errorData || 'Loading error...'"></div>
+    </div>
+
+    <div>
+      <h2>Reactive Updates</h2>
+      <button @click="updateAsyncData">Update Async Data</button>
+      <div data-testid="update-counter" x-text="updateCounter"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.status = 'Initializing...'
+    this.updateCounter = 0
+  }
+
+  async mounted() {
+    this.status = 'Mounting...'
+    
+    // Simulate async data fetching
+    this.items = await this.fetchItems()
+    this.user = await this.fetchUser()
+    
+    // Multiple async operations with different timing
+    const [fastResult, slowResult] = await Promise.allSettled([
+      this.fetchFastData(),
+      this.fetchSlowData(),
+      this.fetchErrorData().catch(err => ({ error: err.message }))
+    ])
+    
+    this.fastData = fastResult.value
+    this.slowData = slowResult.value
+    this.errorData = 'Error handled gracefully'
+    
+    this.status = 'Mounted!'
+  }
+
+  async fetchItems() {
+    await this.delay(100)
+    return [
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+      { id: 3, name: 'Item 3' }
+    ]
+  }
+
+  async fetchUser() {
+    await this.delay(150)
+    return { id: 1, name: 'John Doe', email: 'john@example.com' }
+  }
+
+  async fetchFastData() {
+    await this.delay(50)
+    return 'Fast data loaded'
+  }
+
+  async fetchSlowData() {
+    await this.delay(200)
+    return 'Slow data loaded'
+  }
+
+  async fetchErrorData() {
+    await this.delay(75)
+    throw new Error('Simulated error')
+  }
+
+  async updateAsyncData() {
+    this.updateCounter++
+    this.status = 'Updating...'
+    
+    // Update existing async properties
+    this.items = await this.fetchMoreItems()
+    this.user = await this.fetchUpdatedUser()
+    
+    this.status = `Updated! (${this.updateCounter})`
+  }
+
+  async fetchMoreItems() {
+    await this.delay(80)
+    return [
+      ...this.items,
+      { id: this.items.length + 1, name: `New Item ${this.items.length + 1}` }
+    ]
+  }
+
+  async fetchUpdatedUser() {
+    await this.delay(60)
+    return { 
+      ...this.user, 
+      name: `${this.user.name} (Updated ${this.updateCounter})` 
+    }
+  }
+
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+</script>

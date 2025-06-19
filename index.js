@@ -63,20 +63,25 @@ export const component = async (tagName, path) => {
       this._watchers = []
       this.initialize?.()
       this.$emit('initialize')
-      for (const key of Object.keys(this)) {
-        this._defineReactiveProperty(key, this[key])
-      }
+      this._observe()
       this._initialized = true
       this.setAttribute('x-scope', true);
       window.__peak?.registerInstance?.(this, this.tagName.toLowerCase())
     }
-    connectedCallback() {
+    _observe() {
+      for (const key of Object.keys(this)) {
+        this._defineObservableProperty(key, this[key])
+      }
+    }
+    async connectedCallback() {
+      this._observe()
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
       }
       this.$render()
       this.$refs = this._refs
-      this.mounted?.()
+      await this.mounted?.()
+      this._observe()
       this.$emit('mounted')
     }
     disconnectedCallback() {
@@ -112,7 +117,7 @@ export const component = async (tagName, path) => {
       morph(this, rendered)
       _contextId = null
     }
-    _defineReactiveProperty(prop, initialValue) {
+    _defineObservableProperty(prop, initialValue) {
       if ((prop in this._state) || prop.startsWith('_')) return
 
       this._state[prop] = observable(initialValue)
@@ -310,7 +315,7 @@ function render(template, ctx) {
 
       const fragment = document.createDocumentFragment()
 
-      items.forEach((item, index) => {
+      for (const [index, item] of (items || []).entries()) {
         const clone = document.createElement('template')
         if (el.tagName == 'TEMPLATE') {
           clone.innerHTML = el.innerHTML
@@ -325,7 +330,7 @@ function render(template, ctx) {
         for (const c of rendered.children) {
           fragment.append(c)
         }
-      })
+      }
 
       el.replaceWith(fragment)
       return

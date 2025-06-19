@@ -1,0 +1,29 @@
+<template>
+  <div>
+    <h1>Simple Async Test</h1>
+    <div data-testid="items-count" x-text="itemsCount"></div>
+    <div data-testid="message" x-text="message"></div>
+    <div data-testid="loading" x-text="this.loading ? 'Loading...' : 'Done'"></div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.itemsCount = 'initial'
+    this.message = 'initial message'
+    this.loading = true
+  }
+
+  async mounted() {
+    this.message = 'mounting...'
+    
+    // Simple async operation
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    this.itemsCount = 42
+    this.message = 'mounted!'
+    this.loading = false
+  }
+}
+</script>
