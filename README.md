@@ -313,3 +313,30 @@ Peak comes with an optional built-in router.  Register views to route patterns f
 </script>
 ```
 
+## Building with Vite
+
+Optionally, build with Vite in order to get HMR in dev, and bundling for production.
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite'
+import peakPlugin from 'peak/vite'
+
+export default defineConfig({
+  plugins: [peakPlugin()]
+})
+```
+
+Make sure to import `virtual:peak-components` built by the vite build:
+
+```
+// index.html
+<script type="module">
+import "virtual:peak-components"
+import { router } from './peak.js'
+
+router.route('/', '/views/home.html')
+</script>
+```
+
+
