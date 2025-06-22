@@ -354,10 +354,11 @@ function render(template, ctx) {
 
       const name = a.name.replace(/^:/, '')
 
-      const unknown = isCustom(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props
+      const unknown = isCustom(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props?.includes(name)
       unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
 
-      if (a.name.match(/^[a-z]/)) {
+      if (a.name.match(/^[a-z]/) && !unknown) {
+        console.log("NV", a.name, a.value)
         el[a.name] = isBoolAttr(el, name) ? true : a.value
       }
       else if (a.name.startsWith(':')) {
@@ -374,7 +375,7 @@ function render(template, ctx) {
           const objId = getObjId(value)
           el.setAttribute(name, `$${objId}`)
         }
-        el[name] = value
+        !unknown && (el[name] = value)
         //el.removeAttribute(a.name)
       }
       else if (a.name.startsWith('@')) {

@@ -44,11 +44,11 @@ test('title attribute preserved', async ({ page }) => {
   await expect(titleEcho).toHaveAttribute('title', 'hello')
 })
 
-test('unknown props passed through', async ({ page }) => {
+test('unknown props not passed through', async ({ page }) => {
   await page.goto('/props.html')
-  const bogusEcho = page.locator('x-echo:has-text("bogus")')
-  await expect(bogusEcho).toBeVisible()
-  await expect(bogusEcho).toHaveAttribute('bogus', '0')
+  await expect(page.locator('x-echo h1:has-text("bogus")')).toBeVisible()
+  await expect(page.locator('x-echo[bogus]')).toHaveAttribute('bogus', 'invalid')
+  await expect(page.locator('x-echo > span:has-text("fallback")')).toBeVisible()
 })
 
 test('dynamic string concatenation', async ({ page }) => {
