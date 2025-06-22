@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import peakPlugin from '../vite-plugin-peak.js'
+import peakPlugin from '../vite-plugin/index.js'
 
 export default defineConfig({
   plugins: [peakPlugin()],
