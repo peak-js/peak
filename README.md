@@ -144,6 +144,24 @@ Refer to an HTML element via `$refs`
 <button @click="$refs.searchInput.focus()">Search</button>
 ```
 
+## Props
+
+Specify props using a static `props` array:
+
+```html
+<template>
+  Greetings, <span x-text="name"></span>!
+</template>
+
+<script>
+export default class {
+  static props = ['name']
+}
+</script>
+```
+
+Usage: `<x-user-card :name="'Alice'" :age="25"></x-user-card>`
+
 ## Component methods
 
 ### initialize()
@@ -329,7 +347,7 @@ export default defineConfig({
 
 Make sure to import `virtual:peak-components` built by the vite build:
 
-```
+```html
 // index.html
 <script type="module">
 import "virtual:peak-components"

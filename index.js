@@ -4,6 +4,7 @@ const handlers = {}
 const instances = {}
 const objs = new WeakMap
 const { getComponentHTML, getComponentClass } = window.__peak || {}
+const tags = {}
 
 export const route = {}
 
@@ -34,12 +35,13 @@ export const router = Object.assign(new EventTarget, {
   }
 })
 
-export const component = async (tagName, path) => {
+export const component = async (tagName, str) => {
 
-  if (!path.startsWith('/')) path = '/' + path
+  if (str.match(/^s*\w+/)) str = '/' + str
   
-  // Get HTML content from Peak module system or fetch
-  const src = window.__peak?.getComponentHTML?.(path) || await fetch(path).then(r => r.text())
+  const src = (str.match(/<template>/) ? str : window.__peak?.getComponentHTML?.(str))
+    || await fetch(str).then(r => r.text())
+
   const doc = parser.parseFromString(src, 'text/html')
   const _template = doc.querySelector('template')
   const template = document.createElement('div')
@@ -47,10 +49,9 @@ export const component = async (tagName, path) => {
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
   
-  // Use the getComponentClass helper if available
   const _class = window.__peak?.getComponentClass 
-    ? await window.__peak.getComponentClass(path, script)
-    : (await loadModule(script, path)) || new Function
+    ? await window.__peak.getComponentClass(str, script)
+    : (await loadModule(script, str)) || new Function
 
   const instance = new _class
 
@@ -137,6 +138,7 @@ export const component = async (tagName, path) => {
     .forEach(n => Object.defineProperty(_constructor.prototype, n,
       Object.getOwnPropertyDescriptor(_class.prototype, n)))
 
+  _constructor.props = _class.props
   customElements.define(tagName, _constructor)
 
   const scopedStyle = `
@@ -349,8 +351,16 @@ function render(template, ctx) {
     }
 
     for (const a of attrs) {
-      if (a.name.startsWith(':')) {
-        const name = a.name.slice(1)
+
+      const name = a.name.replace(/^:/, '')
+
+      const unknown = isCustom(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props
+      unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
+
+      if (a.name.match(/^[a-z]/)) {
+        el[a.name] = isBoolAttr(el, name) ? true : a.value
+      }
+      else if (a.name.startsWith(':')) {
         const expr = name == 'class' ? `_pk_clsx(${a.value})` : a.value
         let value = evalInContext(ctx, expr)
         if (typeof value == 'boolean' && isBoolAttr(el, name) && !value) {
@@ -367,7 +377,7 @@ function render(template, ctx) {
         el[name] = value
         //el.removeAttribute(a.name)
       }
-      if (a.name.startsWith('@')) {
+      else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
         listen(eventName, el, ctx)
       }
@@ -426,7 +436,6 @@ export function morph(l, r, attr) {
     return e.outerHTML
   }
 
-  const isCustom = e => customElements.get(e.tagName?.toLowerCase())
   const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN
   const compat = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : e.tagName
   const render = e => isCustom(e) && customElements.upgrade(e) || e.$render?.()
@@ -596,6 +605,22 @@ function isBoolAttr(el, name) {
 
 function hsh(str) {
   return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0)
+}
+
+function isCustom(e) {
+  return customElements.get(e.tagName?.toLowerCase())
+}
+
+const elementProperties = Object.getOwnPropertyNames(HTMLElement.prototype).map(x => x.toLowerCase())
+const globalAttributes = "accesskey autocapitalize autofocus class contenteditable dir draggable enterkeyhint hidden id inputmode is lang nonce part slot spellcheck style tabindex translate".split(' ');
+
+function isGlobalAttribute(name) {
+  name = name.toLowerCase()
+  if (name.startsWith('aria-')) return true
+  if (name.startsWith('data-')) return true
+  if (name.startsWith('x-')) return true
+  if (globalAttributes.includes(name)) return true
+  if (elementProperties.includes(name)) return true
 }
 
 export const store = observable({})

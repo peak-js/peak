@@ -1,0 +1,53 @@
+<template>
+  <h1>Props</h1>
+  <x-echo :message="`hello`.toUpperCase()"></x-echo>
+  <hr>
+  <x-echo message="static"></x-echo>
+  <hr>
+  <x-echo :style="`color: red`" message="red"></x-echo>
+  <hr>
+  <x-echo :class="`large`" message="large"></x-echo>
+  <hr>
+  <x-echo message="bogus" bogus="0"></x-echo>
+  <hr>
+  <x-echo message="data-attribute" data-delay="0"></x-echo>
+  <hr>
+  <x-echo message="aria-label" aria-label="greeting"></x-echo>
+  <hr>
+  <x-echo message="title-attribute" title="hello"></x-echo>
+  <hr>
+  <x-echo :message="'dynamic-' + 'concat'"></x-echo>
+  <hr>
+  <x-echo message=""></x-echo>
+  <hr>
+  <x-echo :message="`template-${`literal`}`"></x-echo>
+  <hr>
+  <input type="checkbox" checked> Static checkbox on
+  <hr>
+  <input type="checkbox"> Static checkbox off
+  <hr>
+  <input type="checkbox" :checked="true"> Dynamic checkbox on
+  <hr>
+  <input type="checkbox" :checked="false"> Dynamic checkbox off
+  <hr>
+  <input type="checkbox" :checked="isChecked"> Dynamic checkbox
+  <button @click="toggleChecked">Toggle checked</button>
+  <hr>
+  <div :contenteditable="isEditable">Content</div>
+  <button @click="toggleEditable">Toggle editable</button>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.isEditable = false
+    this.isChecked = false
+  }
+  toggleChecked() {
+    this.isChecked = !this.isChecked
+  }
+  toggleEditable() {
+    this.isEditable = !this.isEditable
+  }
+}
+</script>

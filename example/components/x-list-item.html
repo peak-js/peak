@@ -22,6 +22,8 @@
 import { store } from '../store.js'
 
 export default class {
+  static props = ['item']
+
   get status() {
     return this.item.done ? 'completed' : 'active'
   }
