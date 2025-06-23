@@ -160,8 +160,6 @@ export default class {
 </script>
 ```
 
-Usage: `<x-user-card :name="'Alice'" :age="25"></x-user-card>`
-
 ## Component methods
 
 ### initialize()
