@@ -38,7 +38,7 @@ Components are defined in plain HTML files, with each file having a `<template>`
 
 <template>
   <button @click="increment">
-    <span x-text="count"></span>
+    <span x-text="count" />
   </button>
 </template>
 
@@ -95,7 +95,7 @@ Also available are `x-if-else` and `x-else`
 </template>
 
 <template x-else>
-  <x-content></x-content>
+  <x-content />
 </template>
 ```
 
@@ -106,7 +106,7 @@ Render some HTML for each item in an array
 ```html
 <ul>
   <li x-for="item in items">
-    <span x-text="item.title"></span>
+    <span x-text="item.title" />
   </li>
 </ul>
 ```
@@ -116,7 +116,7 @@ Render some HTML for each item in an array
 Set the text content of an element
 
 ```html
-<span x-text="`Hello, ${name}`"></span>
+<span x-text="`Hello, ${name}`" />
 ```
 
 ### x-html
@@ -150,7 +150,7 @@ Specify props using a static `props` array:
 
 ```html
 <template>
-  Greetings, <span x-text="name"></span>!
+  Greetings, <span x-text="name" />!
 </template>
 
 <script>
@@ -207,7 +207,7 @@ Run methods when reactive data changes
 
 ```html
 <template>
-  <button @click="count++">
+  <button @click="count++" x-text="count" />
 </template>
 
 <script>
@@ -275,7 +275,7 @@ Use instance getters for display formatting, and other derived properties
 
 ```html
 <template>
-  <div x-text="formattedTime"></div>
+  <div x-text="formattedTime" />
 </template>
 
 <script>
@@ -298,7 +298,7 @@ Styles defined in the component are scoped to the component — they won't leak 
 <template>
   <h1>Article title</h1>
   <p>This text in red won't leak to other components</p>
-  <x-body></x-body>
+  <x-body />
 </template>
 
 <style>

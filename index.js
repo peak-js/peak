@@ -42,7 +42,8 @@ export const component = async (tagName, str) => {
   const src = (str.match(/<template>/) ? str : window.__peak?.getComponentHTML?.(str))
     || await fetch(str).then(r => r.text())
 
-  const doc = parser.parseFromString(src, 'text/html')
+  const processedSrc = preprocessSelfClosingTags(src)
+  const doc = parser.parseFromString(processedSrc, 'text/html')
   const _template = doc.querySelector('template')
   const template = document.createElement('div')
   template.innerHTML = `${_template?.innerHTML || ''}`
@@ -622,6 +623,12 @@ function isGlobalAttribute(name) {
   if (name.startsWith('x-')) return true
   if (globalAttributes.includes(name)) return true
   if (elementProperties.includes(name)) return true
+}
+
+function preprocessSelfClosingTags(html) {
+  return html
+    .replace(/<(x-[\w-]+)([^>]*?)\s*\/>/g, '<$1$2></$1>')
+    .replace(/<(\w+)([^>]*?\sx-text=[^>]*?)\s*\/>/g, '<$1$2></$1>')
 }
 
 export const store = observable({})

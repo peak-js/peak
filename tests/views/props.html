@@ -1,26 +1,26 @@
 <template>
   <h1>Props</h1>
-  <x-echo :message="`hello`.toUpperCase()"></x-echo>
+  <x-echo :message="`hello`.toUpperCase()" />
   <hr>
-  <x-echo message="static"></x-echo>
+  <x-echo message="static" />
   <hr>
-  <x-echo :style="`color: red`" message="red"></x-echo>
+  <x-echo :style="`color: red`" message="red" />
   <hr>
-  <x-echo :class="`large`" message="large"></x-echo>
+  <x-echo :class="`large`" message="large" />
   <hr>
-  <x-echo message="bogus" bogus="invalid"></x-echo>
+  <x-echo message="bogus" bogus="invalid" />
   <hr>
-  <x-echo message="data-attribute" data-delay="0"></x-echo>
+  <x-echo message="data-attribute" data-delay="0" />
   <hr>
-  <x-echo message="aria-label" aria-label="greeting"></x-echo>
+  <x-echo message="aria-label" aria-label="greeting" />
   <hr>
-  <x-echo message="title-attribute" title="hello"></x-echo>
+  <x-echo message="title-attribute" title="hello" />
   <hr>
-  <x-echo :message="'dynamic-' + 'concat'"></x-echo>
+  <x-echo :message="'dynamic-' + 'concat'" />
   <hr>
-  <x-echo message=""></x-echo>
+  <x-echo message="" />
   <hr>
-  <x-echo :message="`template-${`literal`}`"></x-echo>
+  <x-echo :message="`template-${`literal`}`" />
   <hr>
   <input type="checkbox" checked> Static checkbox on
   <hr>
