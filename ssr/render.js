@@ -91,14 +91,21 @@ async function renderCustomComponent(el, contextData) {
     }
   }
   
-  // render the component with props
-  const componentData = { ...contextData, ...props }
+  // capture slot content (innerHTML of the custom element)
+  const slotContent = el.innerHTML.trim()
+
+  // render the component with props and slot content
+  const componentData = { 
+    ...contextData, 
+    ...props,
+    _slotContent: slotContent 
+  }
   const result = await renderComponent(componentPath, componentData)
-  
+
   // parse the rendered HTML to get the actual component element
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = result.html
-  
+
   // get the first real element inside the wrapper div (skip text nodes)
   let componentEl = null
   for (const child of tempDiv.firstChild?.childNodes || []) {
@@ -296,6 +303,21 @@ async function renderSSR(template, ctx, data) {
       }
     }
     
+    if (el.tagName === 'SLOT') {
+      const slottedContent = ctx._slotContent || ''
+      if (slottedContent) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = slottedContent
+
+        if (el.parentNode && tempDiv.childNodes.length > 0) {
+          for (const child of [...tempDiv.childNodes]) {
+            el.parentNode.insertBefore(child, el)
+          }
+          el.remove()
+        }
+      }
+    }
+
     // Recursively render children
     const children = [...(el.children || [])]
     const childState = {}
@@ -308,6 +330,8 @@ async function renderSSR(template, ctx, data) {
   }
   
   await _render(root, {})
+  await processCustomComponents(root, data)
+  
   return root
 }
 
@@ -398,6 +422,6 @@ function clsx(...args) {
       }
     }
   }
-  
+
   return classes.join(' ')
 }

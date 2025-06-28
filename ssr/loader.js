@@ -15,7 +15,7 @@ export function parseComponent(htmlContent, filePath) {
   const templateEl = doc.querySelector('template')
   const styleEl = doc.querySelector('style')
   const scriptEl = doc.querySelector('script')
-  
+
   return {
     template: templateEl ? templateEl.innerHTML : '',
     style: styleEl ? styleEl.textContent : '',

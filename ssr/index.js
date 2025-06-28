@@ -9,7 +9,6 @@ export function setupPeakSSR(app, options = {}) {
   const {
     viewsDir = 'views',
     componentsDir = 'components',
-    layout = null,
     cache = process.env.NODE_ENV === 'production',
     middleware = true
   } = options
@@ -23,7 +22,6 @@ export function setupPeakSSR(app, options = {}) {
   const engine = registerPeakEngine(app, {
     componentsDir,
     viewsDir,
-    layout,
     cache
   })
   
