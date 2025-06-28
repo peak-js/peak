@@ -27,7 +27,9 @@ Easy reactive web framework with no setup required
 - Reusable single-file components
 - Scoped CSS styles per component
 - Optional url-based view routing
-- Lightweight at less than 5kb gzipped
+- Lightweight at ~5kb gzipped
+- Support for server-side rendering (SSR)
+- Optional Vite plugin for bundling and HMR 
 
 ## Components
 
@@ -60,7 +62,7 @@ Components are defined in plain HTML files, with each file having a `<template>`
 </style>
 ```
 
-Register components and use them directly:
+Register components and use them directly in markup:
 
 ```html
 <!-- index.html -->
