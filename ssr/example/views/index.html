@@ -1,0 +1,14 @@
+<template>
+  <small>TITLE</small>
+  <h1 x-text="title"></h1>
+  <hr>
+  <x-todo-item x-for="item in items"></x-todo-item>
+</template>
+
+<script>
+export default class {
+  constructor() {
+    console.log("CONSTRUCTOR", this)
+  }
+}
+</script>	

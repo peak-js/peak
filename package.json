@@ -1,0 +1,7 @@
+{
+  "name": "peak",
+  "version": "1.0.0",
+  "description": "A lightweight web framework",
+  "type": "module",
+  "main": "index.js"
+}

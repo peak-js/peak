@@ -1,0 +1,14 @@
+{
+  "name": "peak-ssr",
+  "version": "1.0.0",
+  "description": "Server side rendering for Peak",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "linkedom": "^0.18.5"
+  },
+  "devDependencies": {
+    "express": "^4.18.0"
+  }
+}
+

@@ -1,0 +1,50 @@
+<template>
+  <div class="todo-list">
+    <h1 x-text="title"></h1>
+    <p x-text="`You have ${todos.length} todos`"></p>
+    
+    <ul class="todos" x-if="todos.length > 0">
+      <template x-for="todo in todos">
+        <x-todo-item :todo="todo"></x-todo-item>
+      </template>
+    </ul>
+    
+    <p x-if="todos.length === 0" class="empty">
+      No todos yet! Add some tasks to get started.
+    </p>
+  </div>
+</template>
+
+<style>
+  .todo-list {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .todos {
+    list-style: none;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .empty {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px;
+    background: #f9f9f9;
+    border-radius: 8px;
+  }
+</style>
+
+<script>
+export default class TodoList {
+  initialize() {
+    console.log("SSR INIT")
+  }
+}
+</script>

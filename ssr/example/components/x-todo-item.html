@@ -1,0 +1,75 @@
+<template>
+  <li class="todo-item" :class="{ completed: todo.completed }">
+    <input type="checkbox" :checked="todo.completed" />
+    <span class="todo-text" x-text="todo.text"></span>
+    <span class="todo-priority" x-if="todo.priority" x-text="`(${todo.priority})`"></span>
+    <small class="todo-meta" x-if="environment === 'server'" x-text="`Rendered on ${environment} at ${loadTime}`"></small>
+    <small class="todo-processed" x-if="serverProcessed" x-text="'✓ Server processed'"></small>
+  </li>
+</template>
+
+<style>
+  .todo-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .todo-item.completed .todo-text {
+    text-decoration: line-through;
+    color: #888;
+  }
+  
+  .todo-text {
+    flex: 1;
+  }
+  
+  .todo-priority {
+    font-size: 0.8em;
+    color: #666;
+    font-style: italic;
+  }
+  
+  .todo-meta, .todo-processed {
+    font-size: 0.7em;
+    color: #999;
+    display: block;
+    margin-top: 4px;
+  }
+  
+  .todo-processed {
+    color: #4a90e2;
+  }
+</style>
+
+<script>
+export default class {
+  constructor() {
+    this.todo = {
+      text: '',
+      completed: false,
+      priority: null
+    }
+    this.loadTime = null
+    this.environment = 'unknown'
+  }
+  
+  async ssr() {
+    this.loadTime = new Date().toISOString()
+    this.environment = 'server'
+    
+    if (this.todo.text === 'Learn Peak.js SSR') {
+      await new Promise(r => setTimeout(r, 100))
+      this.todo.priority = 'high'
+    }
+  }
+  
+  initialize() {
+    if (this.$ssr) {
+      this.serverProcessed = true
+    }
+  }
+}
+</script>
