@@ -1,0 +1,13 @@
+<template>
+  <h1>Slots</h1>
+  <x-echo :message="`hello`.toUpperCase()">
+    <h1>default content</h1>
+    <template slot="pre">
+      BEFOREHAND!
+    </template>
+    <template slot="post">
+      AFTERWARD?
+    </template>
+  </x-echo>
+</template>
+

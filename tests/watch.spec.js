@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test('$watch basic property changes', async ({ page }) => {
   await page.goto('/watch.html')

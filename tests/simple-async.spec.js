@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test('simple async mounted lifecycle', async ({ page }) => {
   await page.goto('/simple-async.html');
