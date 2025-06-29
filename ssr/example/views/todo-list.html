@@ -12,9 +12,7 @@
       <p x-text="`You have ${todos.length} todos`"></p>
 
       <ul class="todos" x-if="todos.length > 0">
-        <template x-for="todo in todos">
-          <x-todo-item :todo="todo"></x-todo-item>
-        </template>
+        <x-todo-item x-for="todo in todos" :todo="todo" />
       </ul>
 
       <p x-if="todos.length === 0" class="empty">
@@ -34,7 +32,7 @@
     padding: 20px;
     font-family: Arial, sans-serif;
   }
-  
+
   .todos {
     list-style: none;
     padding: 0;
@@ -42,7 +40,7 @@
     border-radius: 8px;
     overflow: hidden;
   }
-  
+
   .empty {
     text-align: center;
     color: #666;
@@ -53,10 +51,3 @@
   }
 </style>
 
-<script>
-export default class {
-  initialize() {
-    console.log("SSR INIT")
-  }
-}
-</script>

@@ -17,14 +17,14 @@ describe('server side rendering', () => {
     const result = await renderComponent(componentPath, {}, {
       componentDirs: [componentsDir, viewsDir]
     })
-    
+
     assert.ok(result.html.includes('Default Title'))
     assert.ok(result.html.includes('Default Message'))
     assert.ok(result.html.includes('class="simple"'))
     assert.ok(result.styles.includes('.simple'))
     assert.ok(result.tagName.includes('simple-component'))
   })
-  
+
   test('simple component with provided data', async () => {
     const componentPath = path.join(componentsDir, 'simple-component.html')
     const result = await renderComponent(componentPath, {
@@ -52,7 +52,7 @@ describe('server side rendering', () => {
     // Note: :class currently replaces static class
     assert.ok(result.html.includes('class="active"'))
   })
-  
+
   test('missing props', async () => {
     const componentPath = path.join(componentsDir, 'item-component.html')
     const result = await renderComponent(componentPath, {
@@ -66,7 +66,7 @@ describe('server side rendering', () => {
     assert.ok(!result.html.includes('class="item active"')) // Should not be active
   })
 
-  test('should process x-text directives', async () => {
+  test('x-text directives', async () => {
     const componentPath = path.join(componentsDir, 'simple-component.html')
     const result = await renderComponent(componentPath, {
       title: 'Dynamic Title',
@@ -74,12 +74,12 @@ describe('server side rendering', () => {
     }, {
       componentDirs: [componentsDir, viewsDir]
     })
-    
+
     assert.ok(result.html.includes('Dynamic Title'))
     assert.ok(result.html.includes('Dynamic Message'))
   })
 
-  test('should process :class directive', async () => {
+  test('dynamic :class property', async () => {
     const componentPath = path.join(componentsDir, 'item-component.html')
     const result = await renderComponent(componentPath, {
       item: { name: 'Active Item', active: true }
@@ -113,7 +113,7 @@ describe('server side rendering', () => {
     })
 
     assert.ok(result.html.includes('Valid Title'))
-    // Should fall back to default value from constructor
+    // fall back to default value from constructor
     assert.ok(result.html.includes('Default Message'))
   })
 })
