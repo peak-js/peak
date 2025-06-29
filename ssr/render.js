@@ -82,7 +82,7 @@ async function renderCustomComponent(el, contextData) {
     if (attr.name.startsWith(':')) {
       // dynamic attribute
       const propName = attr.name.slice(1)
-      props[propName] = evalInSSRContext({}, attr.value, contextData)
+      props[propName] = evalInSSRContext(contextData, attr.value, contextData)
     } else {
       // static attribute - don't include if it's an object string
       if (attr.value !== '[object Object]') {
@@ -100,6 +100,8 @@ async function renderCustomComponent(el, contextData) {
     ...props,
     _slotContent: slotContent 
   }
+  
+  
   const result = await renderComponent(componentPath, componentData)
 
   // parse the rendered HTML to get the actual component element
@@ -242,11 +244,12 @@ async function renderSSR(template, ctx, data) {
           
           const itemData = { ...data, [itemName]: item, index }
           
+          
           // Render directly instead of recursing
           const tempElement = clone.content.children[0]?.cloneNode(true) || clone.content.cloneNode(true)
-          await _render(tempElement, {}, itemData)
           
-          // Process any custom components within this loop item with the correct context
+          // Process template directives, then handle custom components with loop context
+          await _render(tempElement, {}, itemData)
           await processCustomComponents(tempElement, itemData)
           
           fragment.appendChild(tempElement)
@@ -336,12 +339,16 @@ async function renderSSR(template, ctx, data) {
 }
 
 async function processCustomComponents(root, contextData) {
+  
   // Find all custom components in the rendered tree
   const customElements = []
   
   function findCustomElements(el) {
     if (el.nodeType === 1 && el.tagName && (el.tagName.startsWith('X-') || el.tagName.includes('-'))) {
-      customElements.push(el)
+      // Skip elements that were already processed (marked with a flag)
+      if (!el.hasAttribute('data-ssr-processed')) {
+        customElements.push(el)
+      }
     }
     for (const child of el.children || []) {
       findCustomElements(child)
@@ -352,6 +359,7 @@ async function processCustomComponents(root, contextData) {
   
   // Process each custom component
   for (const el of customElements) {
+    el.setAttribute('data-ssr-processed', 'true')
     await renderCustomComponent(el, contextData)
   }
 }
@@ -376,11 +384,21 @@ function evalInSSRContext(element, code, data = {}) {
     }
     
     // Create the function with all context properties as parameters
-    const contextKeys = Object.keys(context)
-    const contextValues = Object.values(context)
+    // Filter to only valid JavaScript identifiers and avoid duplicates
+    const validKeys = []
+    const validValues = []
+    const usedKeys = new Set()
     
-    const func = new Function(...contextKeys, `return ${code}`)
-    return func(...contextValues)
+    for (const [key, value] of Object.entries(context)) {
+      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) && !usedKeys.has(key)) {
+        validKeys.push(key)
+        validValues.push(value)
+        usedKeys.add(key)
+      }
+    }
+    
+    const func = new Function(...validKeys, `return ${code}`)
+    return func(...validValues)
   } catch (error) {
     console.warn(`[peak-ssr] Evaluation error in "${code}":`, error.message)
     return undefined
