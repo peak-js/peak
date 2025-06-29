@@ -115,9 +115,25 @@ export const component = async (tagName, str) => {
     $render() {
       _contextId = this._pk
       this._refs = {}
+      this._extractSlots()
       const rendered = render(template, this)
       morph(this, rendered)
       _contextId = null
+    }
+    _extractSlots() {
+      const slots = {}
+      const defaultContent = []
+      for (const child of [...this.childNodes]) {
+        if (child.nodeType === 1 && child.tagName === 'TEMPLATE' && child.hasAttribute('slot')) {
+          const slotName = child.getAttribute('slot')
+          slots[slotName] = child.innerHTML
+        } else if (child.nodeType === 1 || (child.nodeType === 3 && child.textContent.trim())) {
+          defaultContent.push(child.outerHTML || child.textContent)
+        }
+      }
+      slots.default = defaultContent.join('')
+      this._slotContent = slots.default
+      this._namedSlots = slots
     }
     _defineObservableProperty(prop, initialValue) {
       if ((prop in this._state) || prop.startsWith('_')) return
@@ -305,6 +321,26 @@ function render(template, ctx) {
       if (el.tagName == 'TEMPLATE') {
         el.replaceWith(render(el.content, ctx))
       }
+    }
+    if (el.tagName === 'SLOT') {
+      const slotName = el.getAttribute('name') || 'default'
+      let slottedContent = ''
+      if (slotName === 'default') {
+        slottedContent = ctx._slotContent || ''
+      } else {
+        slottedContent = ctx._namedSlots?.[slotName] || ''
+      }
+      if (slottedContent) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = slottedContent
+        if (el.parentNode && tempDiv.childNodes.length > 0) {
+          for (const child of [...tempDiv.childNodes]) {
+            el.parentNode.insertBefore(child, el)
+          }
+          el.remove()
+        }
+      }
+      return
     }
     if (el.hasAttribute?.('x-for')) {
       const expression = el.getAttribute('x-for')

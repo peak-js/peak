@@ -1,6 +1,9 @@
 <template>
   <h1 x-text="message"></h1>
+  <slot name="pre"></slot>
   <span x-if="this.hasAttribute('bogus')" x-text="this.bogus || 'fallback'"></span>
+  <slot></slot>
+  <slot name="post"></slot>
 </template>
 
 <script>
