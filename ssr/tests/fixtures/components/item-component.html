@@ -1,0 +1,35 @@
+<template>
+  <li class="item" :class="{ active: item.active }">
+    <span x-text="item.name"></span>
+    <small x-if="item.description" x-text="item.description"></small>
+  </li>
+</template>
+
+<style>
+  .item {
+    padding: 8px;
+  }
+  .item.active {
+    background: yellow;
+  }
+</style>
+
+<script>
+export default class {
+  constructor() {
+    this.item = {
+      name: 'Default Item',
+      description: '',
+      active: false
+    }
+  }
+  
+  async ssr() {
+    this.serverRendered = true
+  }
+  
+  initialize() {
+    this.initialized = true
+  }
+}
+</script>

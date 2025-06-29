@@ -4,6 +4,9 @@
   "description": "Server side rendering for Peak",
   "type": "module",
   "main": "index.js",
+  "scripts": {
+    "test": "node tests"
+  },
   "dependencies": {
     "linkedom": "^0.18.5"
   },

@@ -17,7 +17,12 @@ export function createPeakTemplateEngine(options = {}) {
       })
       
       let html = result.html
-      html = result.styles + '\n' + html
+      
+      // only add external styles for non-full documents
+      if (result.styles && !result.isFullDocument) {
+        html = result.styles + '\n' + html
+      }
+      
       callback(null, html)
     } catch (error) {
       console.error('[peak-ssr] Template render error:', error)

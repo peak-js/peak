@@ -1,5 +1,12 @@
 <template>
   <x-layout>
+    <template slot="head">
+      <style>
+        body {
+          background: #f8f8f8;
+        }
+      </style>
+    </template>
     <div class="todo-list">
       <h1 x-text="title"></h1>
       <p x-text="`You have ${todos.length} todos`"></p>
@@ -14,6 +21,9 @@
         No todos yet! Add some tasks to get started.
       </p>
     </div>
+    <template slot="foot">
+      <script src="//google-analytics.com/ga.js"></script>
+    </template>
   </x-layout>
 </template>
 

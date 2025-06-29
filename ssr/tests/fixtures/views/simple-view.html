@@ -1,0 +1,27 @@
+<template>
+  <div class="view">
+    <h2 x-text="viewTitle"></h2>
+    <ul x-if="items.length > 0">
+      <template x-for="item in items">
+        <item-component :item="item"></item-component>
+      </template>
+    </ul>
+    <p x-if="items.length === 0">No items</p>
+  </div>
+</template>
+
+<style>
+  .view {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+
+<script>
+export default class {
+  constructor() {
+    this.viewTitle = 'Default View'
+    this.items = []
+  }
+}
+</script>

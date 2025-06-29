@@ -1,0 +1,27 @@
+<template>
+  <test-layout>
+    <template slot="head">
+      <style>
+        body { background: #f0f0f0; }
+      </style>
+    </template>
+    
+    <div class="content">
+      <h1 x-text="title"></h1>
+      <p x-text="content"></p>
+    </div>
+    
+    <template slot="footer">
+      <p>Footer content</p>
+    </template>
+  </test-layout>
+</template>
+
+<script>
+export default class {
+  constructor() {
+    this.title = 'Layout Test'
+    this.content = 'This is test content'
+  }
+}
+</script>

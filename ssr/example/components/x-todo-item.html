@@ -60,7 +60,8 @@ export default class {
     this.loadTime = new Date().toISOString()
     this.environment = 'server'
     
-    if (this.todo.text === 'Learn Peak.js SSR') {
+    // Check if todo prop is available before accessing it
+    if (this.todo && this.todo.text === 'Learn Peak.js SSR') {
       await new Promise(r => setTimeout(r, 100))
       this.todo.priority = 'high'
     }

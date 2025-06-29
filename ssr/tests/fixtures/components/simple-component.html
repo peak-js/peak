@@ -1,0 +1,21 @@
+<template>
+  <div class="simple">
+    <h1 x-text="title"></h1>
+    <p x-text="message"></p>
+  </div>
+</template>
+
+<style>
+  .simple {
+    color: blue;
+  }
+</style>
+
+<script>
+export default class {
+  constructor() {
+    this.title = 'Default Title'
+    this.message = 'Default Message'
+  }
+}
+</script>

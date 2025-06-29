@@ -17,8 +17,11 @@ export async function renderComponent(filePath, data = {}, options = {}) {
   // set SSR context flag
   instance.$ssr = true
   
-  // merge data into instance
-  Object.assign(instance, data)
+  // merge data into instance BEFORE running ssr()
+  // Use direct assignment to ensure props completely replace instance properties
+  for (const [key, value] of Object.entries(data)) {
+    instance[key] = value
+  }
   
   // run SSR lifecycle method if it exists
   if (typeof instance.ssr === 'function') {
@@ -30,27 +33,188 @@ export async function renderComponent(filePath, data = {}, options = {}) {
     instance.initialize()
   }
   
-  // create the template element
+  // detect if this is a full HTML document (contains <html> tag)
+  const isFullDocument = component.template.includes('<html')
+  
+  // detect if the top-level element is a layout component
+  const layoutMatch = component.template.trim().match(/^\s*<(x-[^>\s]+)/i)
+  const isLayoutWrapper = layoutMatch && layoutMatch[1].includes('layout')
+  
+  if (isLayoutWrapper) {
+    // this view wraps a layout component - render the layout directly
+    const layoutTagName = layoutMatch[1]
+    return await renderLayoutWrapper(component, instance, data, layoutTagName, options)
+  }
+  
+  let rendered, styles
+  
+  if (isFullDocument) {
+    // for full HTML documents, we need to parse the entire document differently
+    // create a document fragment to hold the HTML
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = component.template
+    
+    // find the html element
+    const htmlEl = tempDiv.querySelector('html')
+    
+    if (htmlEl) {
+      // set component directories if provided
+      if (options.componentDirs) {
+        componentDirs = options.componentDirs
+      }
+      
+      // render the HTML element directly
+      rendered = await renderSSR(htmlEl, instance, instance)
+      
+      // for full documents, inject styles into the head if they exist
+      if (component.style) {
+        const head = rendered.querySelector('head')
+        if (head) {
+          const styleEl = document.createElement('style')
+          styleEl.setAttribute('data-peak-component', component.tagName)
+          styleEl.textContent = component.style
+          head.appendChild(styleEl)
+        }
+      }
+      
+      // return the full HTML document as a string (no wrapper div)
+      return {
+        html: `<!DOCTYPE html>\n${rendered.outerHTML}`,
+        styles: '', // styles already injected
+        tagName: component.tagName,
+        isFullDocument: true
+      }
+    }
+  }
+  
+  // for regular components, extract content from template element
+  const templateWrapper = document.createElement('div')
+  templateWrapper.innerHTML = component.template
+  
+  // get the actual template content (skip the <template> wrapper)
+  const templateEl = templateWrapper.querySelector('template')
   const template = document.createElement('div')
-  template.innerHTML = component.template
+  if (templateEl && templateEl.content) {
+    // clone the template content
+    template.appendChild(templateEl.content.cloneNode(true))
+  } else {
+    // fallback if no template wrapper
+    template.innerHTML = component.template
+  }
   
   // set component directories if provided
   if (options.componentDirs) {
     componentDirs = options.componentDirs
   }
   
-  // render the component with SSR context
-  // Use instance as the data context since it now contains all the properties
-  const rendered = await renderSSR(template, instance, instance)
   
-  // generate scoped styles
-  const styles = component.style ? generateScopedStyles(component.style, component.tagName) : ''
+  // render the component with SSR context
+  rendered = await renderSSR(template, instance, instance)
+  
+  // generate scoped styles for regular components
+  styles = component.style ? generateScopedStyles(component.style, component.tagName) : ''
   
   return {
     html: rendered.outerHTML,
     styles,
     tagName: component.tagName
   }
+}
+
+async function renderLayoutWrapper(component, instance, data, layoutTagName, options) {
+  // set component directories if provided
+  if (options.componentDirs) {
+    componentDirs = options.componentDirs
+  }
+  
+  // find the layout component file
+  let layoutPath = null
+  for (const dir of componentDirs) {
+    const possiblePath = path.resolve(dir, `${layoutTagName}.html`)
+    try {
+      fs.accessSync(possiblePath)
+      layoutPath = possiblePath
+      break
+    } catch (e) {
+      // File doesn't exist, continue
+    }
+  }
+  
+  if (!layoutPath) {
+    console.warn(`[peak-ssr] Layout component not found: ${layoutTagName}`)
+    return { html: '', styles: '', tagName: component.tagName }
+  }
+  
+  // parse the view template to extract slot content and layout props
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = component.template
+  
+  const layoutElement = tempDiv.querySelector(layoutTagName)
+  if (!layoutElement) {
+    console.warn(`[peak-ssr] Layout element not found in template`)
+    return { html: '', styles: '', tagName: component.tagName }
+  }
+  
+  // extract attributes as props for the layout
+  const layoutProps = {}
+  for (const attr of [...(layoutElement.attributes || [])]) {
+    if (attr.name.startsWith(':')) {
+      // dynamic attribute
+      const propName = attr.name.slice(1)
+      layoutProps[propName] = evalInSSRContext(instance, attr.value, data)
+    } else {
+      // static attribute
+      if (attr.value !== '[object Object]') {
+        layoutProps[attr.name] = attr.value
+      }
+    }
+  }
+  
+  // capture slot content from inside the layout element and render it
+  const slotContent = layoutElement.innerHTML.trim()
+  
+  // render the slot content with the view's context first
+  const tempSlotDiv = document.createElement('div')
+  tempSlotDiv.innerHTML = slotContent
+  const renderedSlotDiv = await renderSSR(tempSlotDiv, instance, data)
+  
+  const namedSlots = parseNamedSlots(renderedSlotDiv.innerHTML)
+  
+  // render the layout component with the view's data and slot content
+  const layoutData = {
+    ...data,
+    ...layoutProps,
+    _slotContent: namedSlots.default || '',
+    _namedSlots: namedSlots
+  }
+  
+  return await renderComponent(layoutPath, layoutData, options)
+}
+
+function parseNamedSlots(html) {
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = html
+  
+  const slots = {
+    default: ''
+  }
+  
+  const defaultContent = []
+  
+  // Process all child nodes
+  for (const child of [...tempDiv.childNodes]) {
+    if (child.nodeType === 1 && child.tagName === 'TEMPLATE' && child.hasAttribute('slot')) {
+      // This is a named slot
+      const slotName = child.getAttribute('slot')
+      slots[slotName] = child.innerHTML
+    } else {
+      // This is default slot content
+      defaultContent.push(child.outerHTML || child.textContent)
+    }
+  }
+  
+  slots.default = defaultContent.join('')
+  return slots
 }
 
 async function renderCustomComponent(el, contextData) {
@@ -76,6 +240,7 @@ async function renderCustomComponent(el, contextData) {
     return
   }
   
+  
   // extract attributes as props
   const props = {}
   for (const attr of [...(el.attributes || [])]) {
@@ -94,11 +259,15 @@ async function renderCustomComponent(el, contextData) {
   // capture slot content (innerHTML of the custom element)
   const slotContent = el.innerHTML.trim()
 
+  // parse named slots from the slot content
+  const namedSlots = parseNamedSlots(slotContent)
+
   // render the component with props and slot content
   const componentData = { 
     ...contextData, 
     ...props,
-    _slotContent: slotContent 
+    _slotContent: namedSlots.default || '',
+    _namedSlots: namedSlots
   }
   
   
@@ -110,6 +279,13 @@ async function renderCustomComponent(el, contextData) {
 
   // get the first real element inside the wrapper div (skip text nodes)
   let componentEl = null
+  
+  if (result.isFullDocument) {
+    // for full documents, we can't embed them in other components
+    console.warn(`[peak-ssr] Cannot embed full document component ${tagName} inside another component`)
+    return
+  }
+  
   for (const child of tempDiv.firstChild?.childNodes || []) {
     if (child.nodeType === 1) { // Element node
       componentEl = child
@@ -120,7 +296,7 @@ async function renderCustomComponent(el, contextData) {
   if (componentEl && el.parentNode) {
     // replace the custom element with the actual component element
     el.parentNode.replaceChild(componentEl, el)
-  } else {
+  } else if (componentEl) {
     el.innerHTML = componentEl.outerHTML
   }
 }
@@ -307,7 +483,15 @@ async function renderSSR(template, ctx, data) {
     }
     
     if (el.tagName === 'SLOT') {
-      const slottedContent = ctx._slotContent || ''
+      const slotName = el.getAttribute('name') || 'default'
+      let slottedContent = ''
+      
+      if (slotName === 'default') {
+        slottedContent = ctx._slotContent || ''
+      } else {
+        slottedContent = ctx._namedSlots?.[slotName] || ''
+      }
+      
       if (slottedContent) {
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = slottedContent
@@ -382,6 +566,7 @@ function evalInSSRContext(element, code, data = {}) {
       console,
       clsx
     }
+    
     
     // Create the function with all context properties as parameters
     // Filter to only valid JavaScript identifiers and avoid duplicates

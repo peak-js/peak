@@ -1,0 +1,28 @@
+<template>
+  <html>
+    <head>
+      <title x-text="pageTitle || 'Test Page'"></title>
+      <slot name="head"></slot>
+    </head>
+    <body>
+      <header>
+        <h1 x-text="siteName || 'Test Site'"></h1>
+      </header>
+      <main>
+        <slot></slot>
+      </main>
+      <footer>
+        <slot name="footer"></slot>
+      </footer>
+    </body>
+  </html>
+</template>
+
+<script>
+export default class {
+  constructor() {
+    this.siteName = 'Test Site'
+    this.pageTitle = 'Test Page'
+  }
+}
+</script>
