@@ -1,0 +1,37 @@
+# Introduction
+
+Peak.js is a lightweight, reactive web framework that lets you build modern web applications without the complexity of build tools, bundlers, or complex setup processes. It's designed to feel familiar to developers coming from Vue.js or Alpine.js while leveraging the power of native Web Components.
+
+## Why Peak.js?
+
+### Zero Setup Required
+Just include Peak.js in your HTML file and start writing components. No build step, no configuration files, no complex toolchain.
+
+### Reactive by Design
+Built-in reactivity system automatically updates your UI when data changes. No manual DOM manipulation required.
+
+### Native Web Components
+Based on standard Web Components APIs, ensuring forward compatibility and interoperability with other frameworks.
+
+### Lightweight
+Only ~5kb gzipped, Peak.js gives you powerful features without bloating your application.
+
+## Key Features
+
+- **Single File Components**: Write your template, script, and styles in one HTML file
+- **Reactive Data**: Automatic UI updates when data changes
+- **Scoped CSS**: Styles are automatically scoped to prevent leakage
+- **Server-Side Rendering**: Built-in SSR support for better SEO and performance
+- **Template Directives**: Familiar directives like `x-if`, `x-for`, `x-text`, etc.
+- **Event Handling**: Simple `@click` syntax for handling events
+- **Slots**: Component composition with named and default slots
+- **Routing**: Optional client-side routing with the History API
+- **TypeScript Ready**: Full TypeScript support when you need it
+
+## Philosophy
+
+Peak.js follows the principle of **progressive enhancement**. Start simple with plain HTML files, and add more sophisticated features as your application grows. You can always opt into build tools later without rewriting your components.
+
+## Getting Started
+
+Ready to build your first Peak.js application? Let's start with the [Quick Start guide](/guide/quick-start).

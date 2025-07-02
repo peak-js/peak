@@ -49,7 +49,7 @@ export const component = async (tagName, str) => {
   template.innerHTML = `${_template?.innerHTML || ''}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
-  
+
   const _class = window.__peak?.getComponentClass 
     ? await window.__peak.getComponentClass(str, script)
     : (await loadModule(script, str)) || new Function
@@ -119,6 +119,9 @@ export const component = async (tagName, str) => {
       const rendered = render(template, this)
       morph(this, rendered)
       _contextId = null
+    }
+    get $route() {
+      return route
     }
     _extractSlots() {
       const slots = {}
