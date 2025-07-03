@@ -18,6 +18,7 @@ setupPeakSSR(app, {
 
 // serve static files
 app.use(express.static(path.join(__dirname, './public')))
+app.use('/components', express.static(path.join(__dirname, './components')))
 
 // routes
 app.get('/', (req, res) => {
@@ -32,6 +33,6 @@ app.get('/', (req, res) => {
   })
 })
 
-app.listen(port, () => {
-  console.log(`listening on port ${port}`)
+app.listen(port, (...args) => {
+  console.log(`listening on port ${port}`, ...args)
 })

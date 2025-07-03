@@ -1,5 +1,5 @@
 <template>
-  <li class="todo-item" :class="{ completed: todo.completed }">
+  <li class="todo-item" :class="{ completed: todo.completed }" @click="alert('todo')">
     <input type="checkbox" :checked="todo.completed" />
     <span class="todo-text" x-text="todo.text"></span>
     <span class="todo-priority" x-if="todo.priority" x-text="`(${todo.priority})`"></span>

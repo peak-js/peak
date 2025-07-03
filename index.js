@@ -38,7 +38,7 @@ export const router = Object.assign(new EventTarget, {
 export const component = async (tagName, str) => {
 
   if (str.match(/^s*\w+/)) str = '/' + str
-  
+
   const src = (str.match(/<template>/) ? str : window.__peak?.getComponentHTML?.(str))
     || await fetch(str).then(r => r.text())
 
@@ -50,7 +50,7 @@ export const component = async (tagName, str) => {
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
 
-  const _class = window.__peak?.getComponentClass 
+  const _class = window.__peak?.getComponentClass
     ? await window.__peak.getComponentClass(str, script)
     : (await loadModule(script, str)) || new Function
 
@@ -63,6 +63,7 @@ export const component = async (tagName, str) => {
       instances[this._pk] = this
       this._state = Object.create(null)
       this._watchers = []
+      this._template = template.cloneNode(true) // store template for hydration
       this.initialize?.()
       this.$emit('initialize')
       this._observe()
@@ -80,7 +81,18 @@ export const component = async (tagName, str) => {
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
       }
-      this.$render()
+
+      // check for server-side rendered state
+      const ssrData = this.getAttribute('data-peak-ssr')
+      if (ssrData) {
+        // hydrate from server-rendered state
+        this._hydrateFromSSR(ssrData)
+        this.removeAttribute('data-peak-ssr')
+      } else {
+        // no SSR data, render normally
+        this.$render()
+      }
+
       this.$refs = this._refs
       await this.mounted?.()
       this._observe()
@@ -137,6 +149,105 @@ export const component = async (tagName, str) => {
       slots.default = defaultContent.join('')
       this._slotContent = slots.default
       this._namedSlots = slots
+    }
+    _hydrateFromSSR(ssrDataString) {
+      try {
+        const ssrState = JSON.parse(ssrDataString)
+
+        // restore state from server-rendered data
+        for (const [key, value] of Object.entries(ssrState)) {
+          if (!key.startsWith('_') && !key.startsWith('$')) {
+            this[key] = value
+          }
+        }
+
+        // extract slots from current DOM (already rendered by server)
+        this._extractSlots()
+
+        // build refs from existing DOM elements
+        this._refs = {}
+        const refElements = this.querySelectorAll('[x-ref]')
+        for (const el of refElements) {
+          const refName = el.getAttribute('x-ref')
+          if (refName) {
+            this._refs[refName] = el
+          }
+        }
+
+        // attach event listeners to server-rendered elements
+        this._attachEventListeners()
+
+        console.log('[peak] Hydrated component from SSR', this.tagName.toLowerCase())
+      } catch (e) {
+        console.warn('[peak] Failed to hydrate from SSR data, falling back to client render:', e)
+        this.$render()
+      }
+    }
+    _attachEventListeners() {
+      // the original template is stored during component creation
+      if (this._template) {
+        const templateEl = this._template.cloneNode(true)
+        this._attachEventListenersFromTemplate(templateEl, this)
+      }
+    }
+    _attachEventListenersFromTemplate(templateNode, targetElement) {
+      // recursively traverse template and attach event listeners to matching DOM elements
+      const walker = document.createTreeWalker(
+        templateNode,
+        NodeFilter.SHOW_ELEMENT,
+        null,
+        false
+      )
+      
+      const templateElements = []
+      let node = walker.nextNode()
+      while (node) {
+        templateElements.push(node)
+        node = walker.nextNode()
+      }
+      
+      // find matching elements in the actual DOM and attach listeners
+      templateElements.forEach((templateEl, index) => {
+        if (templateEl.nodeType === Node.ELEMENT_NODE) {
+          // find the corresponding element in the rendered DOM
+          const renderedEl = this._findMatchingElement(templateEl, index)
+          if (renderedEl) {
+            this._attachElementListeners(templateEl, renderedEl)
+          }
+        }
+      })
+    }
+    _findMatchingElement(templateEl, index) {
+      // simple matching by position in tree - could be improved with better selectors
+      const allElements = this.querySelectorAll('*')
+      return allElements[index] || null
+    }
+    _attachElementListeners(templateEl, renderedEl) {
+      // check for event handler attributes on template element
+      for (const attr of templateEl.attributes || []) {
+        if (attr.name.startsWith('@')) {
+          const eventType = attr.name.slice(1)
+          const handlerCode = attr.value
+          
+          // attach event listener
+          renderedEl.addEventListener(eventType, (event) => {
+            this.$event = event
+            try {
+              if (handlerCode in this) {
+                // method call
+                this[handlerCode](event)
+              } else {
+                // inline code evaluation
+                evalInContext(this, handlerCode, event)
+              }
+            } catch (err) {
+              console.error('Event handler error:', err)
+            } finally {
+              delete this.$event
+            }
+          })
+        }
+      }
     }
     _defineObservableProperty(prop, initialValue) {
       if ((prop in this._state) || prop.startsWith('_')) return
@@ -472,8 +583,8 @@ export function morph(l, r, attr) {
   const content = e => {
     if (e.nodeType == 3) return e.textContent
     if (isCustom(e)) {
-      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope').map(x => `${x.name}=${x.value}`).join(' ')} />` 
-    } 
+      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope').map(x => `${x.name}=${x.value}`).join(' ')} />`
+    }
     return e.outerHTML
   }
 
@@ -527,7 +638,7 @@ export function morph(l, r, attr) {
       lc[ls++].replaceWith(rc[rs++].cloneNode(true))
     }
   }
-} 
+}
 
 function evalInContext(element, code, ...args) {
 
@@ -546,7 +657,7 @@ function evalInContext(element, code, ...args) {
     return new Function('event', '_pk_clsx', `return ${code}`).call(element, args[0], clsx);
   } catch(e) {
     try { var tagName = element.tagName } catch(e) {}
-    console.warn(element, tagName, code, e) 
+    console.warn(element, tagName, code, e)
   }
 }
 

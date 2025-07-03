@@ -50,6 +50,10 @@
         </div>
       </footer>
       <slot name="foot"></slot>
+      <script type="module">
+        import { component } from '/peak.js'
+        component('x-todo-item', '/components/x-todo-item.html')
+      </script>
     </body>
   </html>
 </template>
