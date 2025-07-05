@@ -270,7 +270,8 @@ async function renderCustomComponent(el, contextData) {
     ...contextData,
     ...props,
     _slotContent: namedSlots.default || '',
-    _namedSlots: namedSlots
+    _namedSlots: namedSlots,
+    _componentEventHandlers: contextData._componentEventHandlers || [],
   }
 
 
@@ -314,6 +315,9 @@ async function renderCustomComponent(el, contextData) {
 
 async function renderSSR(template, ctx, data) {
   const root = template.cloneNode(true)
+
+  // Track elements with event handlers for this component
+  const componentEventHandlers = []
 
   async function _render(el, state = {}, contextData = data) {
     if (!el || el.nodeType !== 1) return el
@@ -492,9 +496,15 @@ async function renderSSR(template, ctx, data) {
         el.removeAttribute(name)
       }
 
-      // Remove event handlers (they won't work in SSR)
       if (name.startsWith('@')) {
-        el.removeAttribute(name)
+        const eventType = name.slice(1)
+
+        // create a unique identifier for this element
+        const elementId = `peak-event-${Math.random().toString(36).slice(2)}`
+        el.setAttribute('data-peak-event-id', elementId)
+
+        // track this element's event handler
+        componentEventHandlers.push({ elementId, eventType, handler: value })
       }
     }
 
@@ -534,6 +544,11 @@ async function renderSSR(template, ctx, data) {
 
   await _render(root, {})
   await processCustomComponents(root, data)
+
+  // store event handlers directly on the context instance
+  if (componentEventHandlers.length > 0) {
+    ctx._componentEventHandlers = componentEventHandlers
+  }
 
   return root
 }
@@ -653,6 +668,11 @@ function serializeComponentState(instance, componentData) {
       // skip non-serializable values
       continue
     }
+  }
+
+  // include component event handlers for hydration (from instance)
+  if (instance._componentEventHandlers && instance._componentEventHandlers.length > 0) {
+    state._componentEventHandlers = instance._componentEventHandlers
   }
 
   // only return data if there's something to serialize

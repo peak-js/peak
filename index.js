@@ -168,67 +168,17 @@ export const component = async (tagName, str) => {
           }
         }
 
-        this._attachEventListeners()
+        if (ssrState._componentEventHandlers && Array.isArray(ssrState._componentEventHandlers)) {
+          for (const {elementId, eventType} of ssrState._componentEventHandlers) {
+            const el = this.querySelector(`[data-peak-event-id="${elementId}"]`)
+            el && listen(eventType, el, this)
+          }
+        }
+
         console.log('[peak] Hydrated component from SSR', this.tagName.toLowerCase())
       } catch (e) {
         console.warn('[peak] Failed to hydrate from SSR data, falling back to client render:', e)
         this.$render()
-      }
-    }
-    _attachEventListeners() {
-      if (this._template) {
-        const templateEl = this._template.cloneNode(true)
-        this._attachEventListenersFromTemplate(templateEl, this)
-      }
-    }
-    _attachEventListenersFromTemplate(templateNode, targetElement) {
-      const walker = document.createTreeWalker( templateNode, NodeFilter.SHOW_ELEMENT, null, false)
-      const templateElements = []
-      let node = walker.nextNode()
-      while (node) {
-        templateElements.push(node)
-        node = walker.nextNode()
-      }
-      // find matching elements in the actual DOM and attach listeners
-      templateElements.forEach((templateEl, index) => {
-        if (templateEl.nodeType === Node.ELEMENT_NODE) {
-          // find the corresponding element in the rendered DOM
-          const renderedEl = this._findMatchingElement(templateEl, index)
-          if (renderedEl) {
-            this._attachElementListeners(templateEl, renderedEl)
-          }
-        }
-      })
-    }
-    _findMatchingElement(templateEl, index) {
-      const allElements = this.querySelectorAll('*')
-      return allElements[index] || null
-    }
-    _attachElementListeners(templateEl, renderedEl) {
-      // check for event handler attributes on template element
-      for (const attr of templateEl.attributes || []) {
-        if (attr.name.startsWith('@')) {
-          const eventType = attr.name.slice(1)
-          const handlerCode = attr.value
-
-          // attach event listener
-          renderedEl.addEventListener(eventType, (event) => {
-            this.$event = event
-            try {
-              if (handlerCode in this) {
-                // method call
-                this[handlerCode](event)
-              } else {
-                // inline code evaluation
-                evalInContext(this, handlerCode, event)
-              }
-            } catch (err) {
-              console.error('Event handler error:', err)
-            } finally {
-              delete this.$event
-            }
-          })
-        }
       }
     }
     _defineObservableProperty(prop, initialValue) {

@@ -7,7 +7,7 @@ export function createPeakTemplateEngine(options = {}) {
     viewsDir = 'views',
     cache = process.env.NODE_ENV === 'production',
   } = options
-  
+
   // template engine function that Express will call
   return async function peakTemplateEngine(filePath, templateData, callback) {
     try {
@@ -15,14 +15,14 @@ export function createPeakTemplateEngine(options = {}) {
       const result = await renderComponent(absolutePath, templateData, {
         componentDirs: [componentsDir, viewsDir].filter(Boolean)
       })
-      
+
       let html = result.html
-      
+
       // only add external styles for non-full documents
       if (result.styles && !result.isFullDocument) {
         html = result.styles + '\n' + html
       }
-      
+
       callback(null, html)
     } catch (error) {
       console.error('[peak-ssr] Template render error:', error)
@@ -34,15 +34,15 @@ export function createPeakTemplateEngine(options = {}) {
 // helper function to register the Peak template engine with Express
 export function registerPeakEngine(app, options = {}) {
   const engine = createPeakTemplateEngine(options)
-  
+
   // register the template engine for .html files
   app.engine('html', engine)
-  
+
   // set the view engine to html if not already set
   if (!app.get('view engine')) {
     app.set('view engine', 'html')
   }
-  
+
   return engine
 }
 
@@ -61,10 +61,10 @@ export function peakMiddleware(options = {}) {
         body: req.body,
         user: req.user
       }
-      
+
       return this.render(componentPath, renderData, callback)
     }
-    
+
     next()
   }
 }
