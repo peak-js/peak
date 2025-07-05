@@ -63,7 +63,7 @@ export const component = async (tagName, str) => {
       instances[this._pk] = this
       this._state = Object.create(null)
       this._watchers = []
-      this._template = template.cloneNode(true) // store template for hydration
+      this._template = template.cloneNode(true)
       this.initialize?.()
       this.$emit('initialize')
       this._observe()
@@ -82,14 +82,11 @@ export const component = async (tagName, str) => {
         this.$watch(expr, fn, true)
       }
 
-      // check for server-side rendered state
       const ssrData = this.getAttribute('data-peak-ssr')
       if (ssrData) {
-        // hydrate from server-rendered state
         this._hydrateFromSSR(ssrData)
         this.removeAttribute('data-peak-ssr')
       } else {
-        // no SSR data, render normally
         this.$render()
       }
 
@@ -154,17 +151,14 @@ export const component = async (tagName, str) => {
       try {
         const ssrState = JSON.parse(ssrDataString)
 
-        // restore state from server-rendered data
         for (const [key, value] of Object.entries(ssrState)) {
           if (!key.startsWith('_') && !key.startsWith('$')) {
             this[key] = value
           }
         }
 
-        // extract slots from current DOM (already rendered by server)
         this._extractSlots()
 
-        // build refs from existing DOM elements
         this._refs = {}
         const refElements = this.querySelectorAll('[x-ref]')
         for (const el of refElements) {
@@ -174,9 +168,7 @@ export const component = async (tagName, str) => {
           }
         }
 
-        // attach event listeners to server-rendered elements
         this._attachEventListeners()
-
         console.log('[peak] Hydrated component from SSR', this.tagName.toLowerCase())
       } catch (e) {
         console.warn('[peak] Failed to hydrate from SSR data, falling back to client render:', e)
@@ -184,28 +176,19 @@ export const component = async (tagName, str) => {
       }
     }
     _attachEventListeners() {
-      // the original template is stored during component creation
       if (this._template) {
         const templateEl = this._template.cloneNode(true)
         this._attachEventListenersFromTemplate(templateEl, this)
       }
     }
     _attachEventListenersFromTemplate(templateNode, targetElement) {
-      // recursively traverse template and attach event listeners to matching DOM elements
-      const walker = document.createTreeWalker(
-        templateNode,
-        NodeFilter.SHOW_ELEMENT,
-        null,
-        false
-      )
-      
+      const walker = document.createTreeWalker( templateNode, NodeFilter.SHOW_ELEMENT, null, false)
       const templateElements = []
       let node = walker.nextNode()
       while (node) {
         templateElements.push(node)
         node = walker.nextNode()
       }
-      
       // find matching elements in the actual DOM and attach listeners
       templateElements.forEach((templateEl, index) => {
         if (templateEl.nodeType === Node.ELEMENT_NODE) {
@@ -218,7 +201,6 @@ export const component = async (tagName, str) => {
       })
     }
     _findMatchingElement(templateEl, index) {
-      // simple matching by position in tree - could be improved with better selectors
       const allElements = this.querySelectorAll('*')
       return allElements[index] || null
     }
@@ -228,7 +210,7 @@ export const component = async (tagName, str) => {
         if (attr.name.startsWith('@')) {
           const eventType = attr.name.slice(1)
           const handlerCode = attr.value
-          
+
           // attach event listener
           renderedEl.addEventListener(eventType, (event) => {
             this.$event = event
