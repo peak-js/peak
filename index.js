@@ -174,11 +174,8 @@ export const component = async (tagName, str) => {
             el && listen(eventType, el, this)
           }
         }
-
-        console.log('[peak] Hydrated component from SSR', this.tagName.toLowerCase())
       } catch (e) {
-        console.warn('[peak] Failed to hydrate from SSR data, falling back to client render:', e)
-        this.$render()
+        console.warn('[peak] Failed to hydrate from SSR data:', e)
       }
     }
     _defineObservableProperty(prop, initialValue) {

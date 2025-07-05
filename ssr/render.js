@@ -17,13 +17,7 @@ export async function renderComponent(filePath, data = {}, options = {}) {
   // set SSR context flag
   instance.$ssr = true
 
-  // run initialize lifecycle method first to set defaults
-  if (typeof instance.initialize === 'function') {
-    instance.initialize()
-  }
-
-  // merge data into instance AFTER running initialize()
-  // This ensures props override defaults set in initialize()
+  // merge data into instance before running initialize()
   for (const [key, value] of Object.entries(data)) {
     instance[key] = value
   }
@@ -31,6 +25,11 @@ export async function renderComponent(filePath, data = {}, options = {}) {
   // run SSR lifecycle method if it exists
   if (typeof instance.ssr === 'function') {
     await instance.ssr()
+  }
+
+  // run initialize lifecycle method if it exists
+  if (typeof instance.initialize === 'function') {
+    instance.initialize()
   }
 
   // detect if this is a full HTML document (contains <html> tag)
@@ -251,10 +250,8 @@ async function renderCustomComponent(el, contextData) {
       const propName = attr.name.slice(1)
       props[propName] = evalInSSRContext(contextData, attr.value, contextData)
     } else {
-      // static attribute - skip object strings that can't be parsed
-      if (attr.value === '[object Object]') {
-        continue // skip unparseable object strings
-      }
+      // static attributes
+      if (attr.value === '[object Object]') continue
       props[attr.name] = attr.value
     }
   }
@@ -298,17 +295,11 @@ async function renderCustomComponent(el, contextData) {
   }
 
   if (componentEl) {
-    // add hydration data to the original custom element, not the rendered content
     const hydrationData = serializeComponentState(result.instance, componentData)
     if (hydrationData) {
       el.setAttribute('data-peak-ssr', hydrationData)
     }
-
-    // add the original tag name for client-side component registration  
     el.setAttribute('data-peak-component', tagName)
-
-    // replace the content of the custom element with the rendered content
-    // but preserve the custom element itself
     el.innerHTML = componentEl.outerHTML
   }
 }
@@ -316,13 +307,13 @@ async function renderCustomComponent(el, contextData) {
 async function renderSSR(template, ctx, data) {
   const root = template.cloneNode(true)
 
-  // Track elements with event handlers for this component
+  // track elements with event handlers for this component
   const componentEventHandlers = []
 
   async function _render(el, state = {}, contextData = data) {
     if (!el || el.nodeType !== 1) return el
 
-    // Handle x-text directive
+    // handle x-text directive
     if (el.hasAttribute?.('x-text') && !el.hasAttribute?.('x-for')) {
       const expr = el.getAttribute('x-text')
       const value = evalInSSRContext(ctx, expr, contextData)
@@ -330,7 +321,7 @@ async function renderSSR(template, ctx, data) {
       el.removeAttribute('x-text')
     }
 
-    // Handle x-html directive
+    // handle x-html directive
     if (el.hasAttribute?.('x-html') && !el.hasAttribute?.('x-for')) {
       const expr = el.getAttribute('x-html')
       const value = evalInSSRContext(ctx, expr, contextData)
@@ -338,7 +329,7 @@ async function renderSSR(template, ctx, data) {
       el.removeAttribute('x-html')
     }
 
-    // Handle x-if directive
+    // handle x-if directive
     if (el.hasAttribute?.('x-if')) {
       const expr = el.getAttribute('x-if')
       const shouldRender = Boolean(evalInSSRContext(ctx, expr, contextData))
@@ -436,10 +427,10 @@ async function renderSSR(template, ctx, data) {
           const itemData = { ...data, [itemName]: item, index }
 
 
-          // Render directly instead of recursing
+          // render directly instead of recursing
           const tempElement = clone.content.children[0]?.cloneNode(true) || clone.content.cloneNode(true)
 
-          // Process template directives, then handle custom components with loop context
+          // process template directives, then handle custom components with loop context
           await _render(tempElement, {}, itemData)
           await processCustomComponents(tempElement, itemData)
 
@@ -451,7 +442,7 @@ async function renderSSR(template, ctx, data) {
       return fragment
     }
 
-    // Handle x-show directive (convert to style)
+    // handle x-show directive (convert to style)
     if (el.hasAttribute?.('x-show')) {
       const expr = el.getAttribute('x-show')
       const shouldShow = Boolean(evalInSSRContext(ctx, expr, contextData))
