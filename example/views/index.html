@@ -1,6 +1,12 @@
 <template>
   <div class="card">
     <h1>todos</h1>
+    <div>
+      X <span x-text="this.mouse.x"></span>
+      Y <span x-text="this.mouse.y"></span>
+      <input type="text" x-model="inputText" placeholder="Type something...">
+      <input type="checkbox" x-model="inputBool">
+    </div>
     <form class="add-item" @submit="addItem">
       <input x-ref="input" name="title" type="text" placeholder="What needs doing?">
     </form>
@@ -32,12 +38,18 @@
 
 <script>
 import { store } from '../store.js'
+import ComposableMouse from '../lib/composable-mouse.js'
 
 export default class {
   initialize() {
     this.clearCount = 0
     this.$watch('filter', () => console.log("FILTERCHANGE"))
     this.$watch('clearCount', () => console.log("COUNTCHANGE"))
+    this.mouse = this.$compose(ComposableMouse)
+    this.inputText = ''
+    this.inputBool = false
+    this.$watch('inputText', () => console.log("INPUTTEXT", this.inputText))
+    this.$watch('inputBool', () => console.log("INPUTBOOL", this.inputText))
   }
   addItem(e) {
     e.preventDefault()

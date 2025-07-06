@@ -1,0 +1,68 @@
+<template>
+<form>
+  <h1>Form</h1>
+
+  <fieldset>
+    <label><input type="radio" name="color" value="red" x-model="color"> Red</label>
+    <label><input type="radio" name="color" value="green" x-model="color"> Green</label>
+    <label><input type="radio" name="color" value="blue" x-model="color"> Blue</label>
+  </fieldset>
+  <br>
+  <div class="flex">
+    <input type="text" x-model="query">
+    <button @click="clearQuery">Clear</button>
+    <select x-model="city">
+      <option>tokyo</option>
+      <option>paris</option>
+      <option>berlin</option>
+    </select>
+  </div>
+  <br>
+  <label><input type="checkbox" value="red" x-model="invert"> Invert</label>
+  <label><input type="checkbox" value="green" x-model="limit"> Limit</label>
+  <button @click="toggleAll">Toggle all</button>
+</form>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.query = 'ducks'
+    this.color = 'red'
+    this.city = 'tokyo'
+    this.invert = true
+    this.limit = true
+
+    this.$watch('query', () => {
+      console.log("QQ", this.query)
+    })
+    this.$watch('color', () => {
+      console.log("CC", this.color)
+    })
+    this.$watch('city', () => {
+      console.log("YY", this.city)
+    })
+    this.$watch('invert', () => {
+      console.log("VV", this.invert)
+    })
+    this.$watch('limit', () => {
+      console.log("LL", this.limit)
+    })
+  }
+  clearQuery(e) {
+    e.preventDefault()
+    this.query = ''
+  }
+  toggleAll(e) {
+    e.preventDefault()
+    this.invert = !this.invert
+    this.limit = this.invert
+  }
+}
+</script>
+
+<style>
+form {
+  max-width: 400px;
+}
+</style>

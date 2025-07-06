@@ -124,10 +124,14 @@ export const component = async (tagName, str) => {
     $render() {
       _contextId = this._pk
       this._refs = {}
+      remove(this._watchers, ([expr, fn]) => fn._model)
       this._extractSlots()
       const rendered = render(template, this)
       morph(this, rendered)
       _contextId = null
+    }
+    $compose(composable) {
+      return new composable(this)
     }
     get $route() {
       return route
@@ -424,6 +428,13 @@ function render(template, ctx) {
       const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
       el.style.display = shouldShow ? null : 'none'
     }
+    if (el.hasAttribute?.('x-model')) {
+      const prop = el.getAttribute('x-model')
+      const fn = () => el[el.type == 'checkbox' ? 'checked' : 'value'] = ctx[prop]
+      fn._model = true
+      ctx.$watch(prop, fn)
+      model()
+    }
 
     const attrs = []
     for (const a of el.attributes || []) {
@@ -434,11 +445,10 @@ function render(template, ctx) {
 
       const name = a.name.replace(/^:/, '')
 
-      const unknown = isCustom(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props?.includes(name)
+      const unknown = isPeak(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props?.includes(name)
       unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
 
       if (a.name.match(/^[a-z]/) && !unknown) {
-        console.log("NV", a.name, a.value)
         el[a.name] = isBoolAttr(el, name) ? true : a.value
       }
       else if (a.name.startsWith(':')) {
@@ -456,7 +466,6 @@ function render(template, ctx) {
           el.setAttribute(name, `$${objId}`)
         }
         !unknown && (el[name] = value)
-        //el.removeAttribute(a.name)
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
@@ -480,6 +489,25 @@ function listen(eventType, el, ctx) {
   const handler = (e) => handleEvent(e, eventType)
   handlers[eventType] = true
   document.addEventListener(eventType, handler, true)
+}
+
+function model() {
+  if (model.registered) return
+  model.registered = true
+  document.addEventListener('input', e => {
+    if (!e.target.hasAttribute('x-model')) return
+    let el = e.target
+    while (el && el !== document) {
+      if (isPeak(el)) {
+        const name = e.target.getAttribute('x-model')
+        if (name in el) {
+          el[name] = e.target[e.target.type == 'checkbox' ? 'checked' : 'value']
+        }
+        return
+      }
+      el = el.parentElement
+    }
+  })
 }
 
 function handleEvent(event, eventType) {
@@ -511,15 +539,15 @@ export function morph(l, r, attr) {
   const lc = [...l.childNodes], rc = [...r.childNodes]
   const content = e => {
     if (e.nodeType == 3) return e.textContent
-    if (isCustom(e)) {
+    if (isPeak(e)) {
       return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope').map(x => `${x.name}=${x.value}`).join(' ')} />`
     }
     return e.outerHTML
   }
 
-  const key = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN
-  const compat = e => isCustom(e) ? `${e.tagName}:${e.getAttribute('key')}` : e.tagName
-  const render = e => isCustom(e) && customElements.upgrade(e) || e.$render?.()
+  const key = e => isPeak(e) ? `${e.tagName}:${e.getAttribute('key')}` : NaN
+  const compat = e => isPeak(e) ? `${e.tagName}:${e.getAttribute('key')}` : e.tagName
+  const render = e => isPeak(e) && customElements.upgrade(e) || e.$render?.()
 
   if (attr) {
     for (const a of [...r.attributes || []]) {
@@ -608,7 +636,7 @@ function dep(path) {
   }
 }
 
-function observable(x, path = rand()) {
+export function observable(x, path = rand()) {
   if ((typeof x != 'object' || x === null) && dep(path)) return x
   return new Proxy(x, {
     set(x, key) {
@@ -688,10 +716,13 @@ function hsh(str) {
   return str.split('').reduce((a, b) => (a << 5) - a + b.charCodeAt(0)|0, 0)
 }
 
-function isCustom(e) {
-  return customElements.get(e.tagName?.toLowerCase())
+function isPeak(e) {
+  return customElements.get(e.tagName?.toLowerCase()) && e._pk
 }
 
+function remove(arr, fn) {
+  for (let i = arr.length; i--;) fn(arr[i]) && a.splice(i, 1)
+}
 const elementProperties = Object.getOwnPropertyNames(HTMLElement.prototype).map(x => x.toLowerCase())
 const globalAttributes = "accesskey autocapitalize autofocus class contenteditable dir draggable enterkeyhint hidden id inputmode is lang nonce part slot spellcheck style tabindex translate".split(' ');
 
