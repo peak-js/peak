@@ -430,9 +430,18 @@ function render(template, ctx) {
     }
     if (el.hasAttribute?.('x-model')) {
       const prop = el.getAttribute('x-model')
-      const fn = () => el[el.type == 'checkbox' ? 'checked' : 'value'] = ctx[prop]
+      const fn = () => {
+        if (el.type == 'checkbox') {
+          el.checked = ctx[prop]
+        } else if (el.type == 'radio') {
+          el.checked = el.value === ctx[prop]
+        } else {
+          el.value = ctx[prop]
+        }
+      }
       fn._model = true
       ctx.$watch(prop, fn)
+      fn() // Set initial value
       model()
     }
 
@@ -501,7 +510,15 @@ function model() {
       if (isPeak(el)) {
         const name = e.target.getAttribute('x-model')
         if (name in el) {
-          el[name] = e.target[e.target.type == 'checkbox' ? 'checked' : 'value']
+          if (e.target.type == 'checkbox') {
+            el[name] = e.target.checked
+          } else if (e.target.type == 'radio') {
+            el[name] = e.target.value
+          } else {
+            el[name] = e.target.value
+          }
+        } else {
+          console.warn(`[peak] Can't bind to uninitialized property ${name}`)
         }
         return
       }
@@ -721,7 +738,7 @@ function isPeak(e) {
 }
 
 function remove(arr, fn) {
-  for (let i = arr.length; i--;) fn(arr[i]) && a.splice(i, 1)
+  for (let i = arr.length; i--;) fn(arr[i]) && arr.splice(i, 1)
 }
 const elementProperties = Object.getOwnPropertyNames(HTMLElement.prototype).map(x => x.toLowerCase())
 const globalAttributes = "accesskey autocapitalize autofocus class contenteditable dir draggable enterkeyhint hidden id inputmode is lang nonce part slot spellcheck style tabindex translate".split(' ');
