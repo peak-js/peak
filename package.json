@@ -1,7 +1,32 @@
 {
-  "name": "peak",
+  "name": "peak-js",
   "version": "1.0.0",
-  "description": "A lightweight web framework",
+  "description": "Easy reactive web framework",
   "type": "module",
-  "main": "index.js"
+  "main": "index.js",
+  "workspaces": [
+    "packages/peak",
+    "packages/ssr",
+    "packages/vite-plugin"
+  ],
+  "scripts": {
+    "build:packages": "make packages",
+    "test": "npx playwright test --config tests/playwright.config.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peak-js/peak.git"
+  },
+  "keywords": [
+    "web-framework",
+    "web-components",
+    "reactive",
+    "frontend",
+    "javascript"
+  ],
+  "author": "David Chester",
+  "license": "MIT"
 }
