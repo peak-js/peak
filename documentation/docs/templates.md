@@ -8,7 +8,7 @@ Conditionally render a block
 <img x-if="loading" src="spinner.svg">
 ```
 
-Also available are `x-if-else` and `x-else`
+Also available are `x-else-if` and `x-else`
 
 ```html
 <template x-if="loading">

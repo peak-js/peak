@@ -216,7 +216,7 @@ Use the `:key` attribute for efficient list updates:
       <input type="checkbox" x-model="todo.completed">
       <span x-text="todo.text"></span>
     </div>
-    
+
     <!-- Also good: Using index when items don't change order -->
     <div x-for="(item, index) in staticList" :key="index">
       <span x-text="item"></span>
@@ -237,26 +237,26 @@ Two-way data binding for form inputs:
     <!-- Text inputs -->
     <input x-model="user.name" placeholder="Name">
     <textarea x-model="user.bio" placeholder="Bio"></textarea>
-    
+
     <!-- Checkboxes -->
     <label>
       <input type="checkbox" x-model="user.isActive"> Active
     </label>
-    
+
     <!-- Multiple checkboxes -->
     <div>
       <label><input type="checkbox" x-model="skills" value="JavaScript"> JavaScript</label>
       <label><input type="checkbox" x-model="skills" value="Python"> Python</label>
       <label><input type="checkbox" x-model="skills" value="Rust"> Rust</label>
     </div>
-    
+
     <!-- Radio buttons -->
     <div>
       <label><input type="radio" x-model="theme" value="light"> Light</label>
       <label><input type="radio" x-model="theme" value="dark"> Dark</label>
       <label><input type="radio" x-model="theme" value="auto"> Auto</label>
     </div>
-    
+
     <!-- Select dropdown -->
     <select x-model="user.country">
       <option value="">Select Country</option>
@@ -264,19 +264,19 @@ Two-way data binding for form inputs:
       <option value="ca">Canada</option>
       <option value="uk">United Kingdom</option>
     </select>
-    
+
     <!-- Multiple select -->
     <select x-model="selectedCategories" multiple>
       <option value="tech">Technology</option>
       <option value="design">Design</option>
       <option value="business">Business</option>
     </select>
-    
+
     <!-- Number input -->
-    <input type="number" x-model.number="user.age" min="0" max="120">
-    
+    <input type="number" x-model="user.age" min="0" max="120">
+
     <!-- Range slider -->
-    <input type="range" x-model.number="volume" min="0" max="100">
+    <input type="range" x-model="volume" min="0" max="100">
     <span x-text="volume + '%'"></span>
   </form>
 </template>
@@ -291,7 +291,7 @@ export default class {
       country: '',
       age: 25
     }
-    
+
     this.skills = []
     this.theme = 'auto'
     this.selectedCategories = []
@@ -301,24 +301,26 @@ export default class {
 </script>
 ```
 
-### x-model Modifiers
+### x-model Behavior
 
-Modify the behavior of `x-model`:
+The `x-model` directive provides two-way data binding with the following behavior:
+
+- **Text inputs, textareas, selects**: Binds to the `value` property
+- **Checkboxes**: Binds to the `checked` property (boolean)
+- **Radio buttons**: Sets `checked` to `true` when the input's `value` matches the bound property
+- **Updates on input events**: Changes are reflected immediately as the user types or interacts
 
 ```html
 <template>
   <div>
-    <!-- .number: Convert to number -->
-    <input x-model.number="price" type="number" step="0.01">
-    
-    <!-- .trim: Remove whitespace -->
-    <input x-model.trim="username" placeholder="Username">
-    
-    <!-- .lazy: Update on change instead of input -->
-    <input x-model.lazy="description" placeholder="Description">
-    
-    <!-- Combined modifiers -->
-    <input x-model.number.trim="quantity" type="number">
+    <!-- Text input - updates on every keystroke -->
+    <input x-model="username" placeholder="Username">
+
+    <!-- Number input - value is stored as string -->
+    <input type="number" x-model="price" step="0.01">
+
+    <!-- Use JavaScript to convert to number if needed -->
+    <input type="number" x-model="quantity" @input="quantity = parseInt(quantity)">
   </div>
 </template>
 ```
@@ -334,13 +336,13 @@ Create references to DOM elements:
   <div>
     <input x-ref="searchInput" placeholder="Search...">
     <button @click="focusSearch">Focus Search</button>
-    
+
     <video x-ref="videoPlayer" controls>
       <source src="video.mp4" type="video/mp4">
     </video>
     <button @click="playVideo">Play</button>
     <button @click="pauseVideo">Pause</button>
-    
+
     <canvas x-ref="chartCanvas" width="400" height="200"></canvas>
   </div>
 </template>
@@ -351,19 +353,19 @@ export default class {
     // Access refs after component is mounted
     this.drawChart()
   }
-  
+
   focusSearch() {
     this.$refs.searchInput.focus()
   }
-  
+
   playVideo() {
     this.$refs.videoPlayer.play()
   }
-  
+
   pauseVideo() {
     this.$refs.videoPlayer.pause()
   }
-  
+
   drawChart() {
     const canvas = this.$refs.chartCanvas
     const ctx = canvas.getContext('2d')
@@ -385,26 +387,26 @@ Bind attributes dynamically using `:attribute` syntax:
     <!-- Basic attribute binding -->
     <img :src="imageUrl" :alt="imageDescription">
     <a :href="linkUrl" :target="linkTarget">Visit Site</a>
-    
+
     <!-- Class binding -->
     <div :class="containerClass">Container</div>
     <button :class="{ active: isActive, disabled: isDisabled }">Button</button>
     <span :class="[baseClass, statusClass]">Status</span>
-    
+
     <!-- Style binding -->
     <div :style="{ color: textColor, fontSize: fontSize + 'px' }">Styled text</div>
     <div :style="dynamicStyles">Dynamic styles</div>
-    
+
     <!-- Boolean attributes -->
     <input :disabled="isLoading" :required="isRequired">
     <details :open="showDetails">
       <summary>Click to expand</summary>
       <p>Hidden content</p>
     </details>
-    
+
     <!-- Data attributes -->
     <div :data-user-id="user.id" :data-role="user.role">User Info</div>
-    
+
     <!-- ARIA attributes -->
     <button :aria-pressed="isPressed" :aria-label="buttonLabel">
       Toggle
@@ -419,33 +421,33 @@ export default class {
     this.imageDescription = 'Hero image'
     this.linkUrl = 'https://example.com'
     this.linkTarget = '_blank'
-    
+
     this.isActive = true
     this.isDisabled = false
     this.isLoading = false
     this.isRequired = true
     this.showDetails = false
     this.isPressed = false
-    
+
     this.textColor = '#333'
     this.fontSize = 16
-    
+
     this.user = { id: 123, role: 'admin' }
     this.buttonLabel = 'Toggle settings panel'
   }
-  
+
   get containerClass() {
     return `container ${this.isActive ? 'active' : 'inactive'}`
   }
-  
+
   get baseClass() {
     return 'status-indicator'
   }
-  
+
   get statusClass() {
     return this.isActive ? 'online' : 'offline'
   }
-  
+
   get dynamicStyles() {
     return {
       backgroundColor: this.isActive ? '#4ade80' : '#ef4444',
@@ -474,7 +476,7 @@ Directives can be combined on the same element:
       @click="handleClick"
       x-text="buttonText">
     </button>
-    
+
     <!-- Loop with conditional content -->
     <div x-for="item in items" :key="item.id">
       <h3 x-text="item.title"></h3>
@@ -495,8 +497,8 @@ Use computed properties for dynamic directive values:
     <div :class="computedClasses" :style="computedStyles">
       Dynamic element
     </div>
-    
-    <input 
+
+    <input
       :placeholder="computedPlaceholder" 
       :maxlength="computedMaxLength"
       x-model="inputValue">
@@ -511,7 +513,7 @@ export default class {
     this.inputValue = ''
     this.fieldType = 'email'
   }
-  
+
   get computedClasses() {
     return [
       'dynamic-element',
@@ -519,14 +521,14 @@ export default class {
       `size-${this.size}`
     ].join(' ')
   }
-  
+
   get computedStyles() {
     return {
       '--primary-color': this.theme === 'dark' ? '#fff' : '#000',
       transform: `scale(${this.size === 'large' ? 1.2 : 1})`
     }
   }
-  
+
   get computedPlaceholder() {
     const placeholders = {
       email: 'Enter your email address',
@@ -535,56 +537,10 @@ export default class {
     }
     return placeholders[this.fieldType] || 'Enter value'
   }
-  
+
   get computedMaxLength() {
     return this.fieldType === 'password' ? 128 : 255
   }
 }
 </script>
 ```
-
-## Best Practices
-
-### 1. Keep Expressions Simple
-```html
-<!-- Good -->
-<span x-text="user.name"></span>
-<div :class="{ active: isActive }"></div>
-
-<!-- Avoid complex logic in templates -->
-<span x-text="user.firstName + ' ' + user.lastName + (user.title ? ', ' + user.title : '')"></span>
-
-<!-- Better: Use computed properties -->
-<span x-text="fullName"></span>
-```
-
-### 2. Use Semantic HTML
-```html
-<!-- Good: Semantic elements with directives -->
-<article x-show="post.published">
-  <header>
-    <h1 x-text="post.title"></h1>
-    <time :datetime="post.publishedAt" x-text="formattedDate"></time>
-  </header>
-  <main x-html="post.content"></main>
-</article>
-```
-
-### 3. Prefer x-show over x-if for Frequent Toggles
-```html
-<!-- For frequently toggled content -->
-<div x-show="isVisible">Content that toggles often</div>
-
-<!-- For conditionally rendered content -->
-<div x-if="user.hasPermission">Admin panel</div>
-```
-
-### 4. Use Keys for Dynamic Lists
-```html
-<!-- Always use keys for dynamic lists -->
-<div x-for="item in items" :key="item.id">
-  <span x-text="item.name"></span>
-</div>
-```
-
-Template directives in Peak.js provide a powerful and expressive way to create dynamic user interfaces while keeping your templates clean and readable.

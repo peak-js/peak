@@ -265,7 +265,7 @@ decrement() {
 
 Add an input to control the step size:
 ```html
-<input type="number" x-model.number="step" min="1" max="10">
+<input type="number" x-model="step" min="1" max="10">
 ```
 
 ### Exercise 2: Create a Todo List

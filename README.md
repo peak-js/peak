@@ -85,7 +85,7 @@ Conditionally render a block
 <img x-if="loading" src="spinner.svg">
 ```
 
-Also available are `x-if-else` and `x-else`
+Also available are `x-else` and `x-else-if`
 
 ```html
 <template x-if="loading">
