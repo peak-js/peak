@@ -356,5 +356,3 @@ import { router } from './peak.js'
 router.route('/', '/views/home.html')
 </script>
 ```
-
-
