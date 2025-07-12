@@ -26,7 +26,6 @@ Only ~5kb gzipped, Peak.js gives you powerful features with a minimum of complex
 - **Event Handling**: Simple `@click` syntax for handling events
 - **Slots**: Component composition with named and default slots
 - **Routing**: Optional client-side routing with the History API
-- **TypeScript Ready**: Full TypeScript support when you need it
 
 ## Philosophy
 

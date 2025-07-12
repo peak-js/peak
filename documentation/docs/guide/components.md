@@ -114,8 +114,6 @@ button {
 
 ## Component Registration
 
-### Basic Registration
-
 Register components using the `component()` function:
 
 ```javascript
@@ -128,39 +126,6 @@ component('x-card', './components/x-card.html')
 component('x-button', './components/x-button.html')
 component('x-modal', './components/x-modal.html')
 component('x-form', './components/x-form.html')
-```
-
-### Batch Registration
-
-Register multiple components at once:
-
-```javascript
-const components = [
-  ['x-header', './components/x-header.html'],
-  ['x-sidebar', './components/x-sidebar.html'],
-  ['x-footer', './components/x-footer.html']
-]
-
-components.forEach(([name, path]) => {
-  component(name, path)
-})
-```
-
-### Dynamic Registration
-
-Register components conditionally:
-
-```javascript
-// Only register admin components for admin users
-if (user.role === 'admin') {
-  component('x-admin-panel', './components/admin/x-admin-panel.html')
-  component('x-user-manager', './components/admin/x-user-manager.html')
-}
-
-// Register components based on feature flags
-if (features.chatEnabled) {
-  component('x-chat-widget', './components/x-chat-widget.html')
-}
 ```
 
 ## Props
@@ -203,23 +168,23 @@ export default class {
 Pass props using attributes:
 
 ```html
-<!-- Static props -->
-<x-user-card :user="currentUser" show-actions="true"></x-user-card>
+<!-- static props -->
+<x-user-card :user="currentUser" show-actions="true" />
 
-<!-- Dynamic props -->
-<x-user-card 
-  :user="user" 
-  :show-actions="user.id === currentUser.id">
-</x-user-card>
+<!-- dynamic props -->
+<x-user-card
+  :user="user"
+  :show-actions="user.id === currentUser.id"
+/>
 
-<!-- Loop with props -->
-<x-user-card 
-  x-for="user in users" 
+<!-- loop with props -->
+<x-user-card
+  x-for="user in users"
   :key="user.id"
-  :user="user" 
+  :user="user"
   :show-actions="canEdit(user)"
   @edit="handleEditUser">
-</x-user-card>
+/>
 ```
 
 ### Prop Validation
@@ -230,19 +195,19 @@ Validate props in the component:
 <script>
 export default class {
   static props = ['count', 'type', 'config']
-  
+
   initialize() {
-    // Validate required props
+    // validate required props
     if (!this.count) {
       console.warn('x-counter: count prop is required')
     }
-    
-    // Validate prop types
+
+    // validate prop types
     if (typeof this.count !== 'number') {
       console.warn('x-counter: count must be a number')
     }
-    
-    // Set defaults
+
+    // set defaults
     this.type = this.type || 'default'
     this.config = this.config || {}
   }
@@ -260,21 +225,21 @@ Called when the component is first created, before mounting:
 <script>
 export default class {
   initialize() {
-    // Set initial state
+    // set initial state
     this.count = 0
     this.items = []
-    
-    // Set up watchers
+
+    // set up watchers
     this.$watch('count', () => {
       console.log('Count changed:', this.count)
     })
-    
-    // Initialize external libraries (be careful with DOM access)
+
+    // initialize external libraries
     this.setupAnalytics()
   }
-  
+
   setupAnalytics() {
-    // Initialize analytics that don't need DOM
+    // initialize analytics that don't need DOM
     this.analytics = new Analytics({
       userId: this.userId,
       component: 'x-counter'
@@ -294,31 +259,31 @@ export default class {
   async mounted() {
     // DOM is available here
     console.log('Component element:', this)
-    
-    // Access refs
+
+    // access refs
     if (this.$refs.canvas) {
       this.initializeChart()
     }
-    
-    // Set up DOM event listeners
+
+    // set up DOM event listeners
     this.setupKeyboardShortcuts()
-    
-    // Load initial data
+
+    // load initial data
     await this.loadData()
-    
+
     // Initialize third-party libraries that need DOM
     this.initializeLibraries()
   }
-  
+
   initializeChart() {
     const ctx = this.$refs.canvas.getContext('2d')
     this.chart = new Chart(ctx, this.chartConfig)
   }
-  
+
   setupKeyboardShortcuts() {
     document.addEventListener('keydown', this.handleKeydown.bind(this))
   }
-  
+
   async loadData() {
     this.loading = true
     try {
@@ -342,39 +307,39 @@ export default class {
     this.timers = []
     this.eventListeners = []
   }
-  
+
   mounted() {
-    // Set up timer
+    // set up timer
     const timer = setInterval(() => {
       this.updateTime()
     }, 1000)
     this.timers.push(timer)
-    
-    // Set up event listener
+
+    // set up event listener
     const listener = this.handleResize.bind(this)
     window.addEventListener('resize', listener)
     this.eventListeners.push({ event: 'resize', listener })
   }
-  
+
   teardown() {
-    // Clean up timers
+    // clean up timers
     this.timers.forEach(timer => clearInterval(timer))
-    
-    // Clean up event listeners
+
+    // clean up event listeners
     this.eventListeners.forEach(({ event, listener }) => {
       window.removeEventListener(event, listener)
     })
-    
-    // Clean up third-party libraries
+
+    // clean up third-party libraries
     if (this.chart) {
       this.chart.destroy()
     }
-    
-    // Cancel ongoing requests
+
+    // cancel ongoing requests
     if (this.abortController) {
       this.abortController.abort()
     }
-    
+
     console.log('Component cleaned up')
   }
 }
@@ -388,7 +353,7 @@ export default class {
 Pass data down through props:
 
 ```html
-<!-- Parent component -->
+<!-- parent component -->
 <template>
   <div>
     <x-search-form @search="handleSearch"></x-search-form>
@@ -402,7 +367,7 @@ export default class {
     this.searchResults = []
     this.isLoading = false
   }
-  
+
   async handleSearch(query) {
     this.isLoading = true
     this.searchResults = await this.performSearch(query)
@@ -417,7 +382,7 @@ export default class {
 Use custom events to communicate up:
 
 ```html
-<!-- Child component -->
+<!-- child component -->
 <template>
   <form @submit.prevent="handleSubmit">
     <input x-model="query" placeholder="Search...">
@@ -430,7 +395,7 @@ export default class {
   initialize() {
     this.query = ''
   }
-  
+
   handleSubmit() {
     if (this.query.trim()) {
       this.$emit('search', this.query.trim())
@@ -445,25 +410,22 @@ export default class {
 For components that aren't directly related:
 
 ```javascript
-// utils/eventBus.js
+// utils/event-bus.js
 class EventBus {
   constructor() {
     this.events = {}
   }
-  
   on(event, callback) {
     if (!this.events[event]) {
       this.events[event] = []
     }
     this.events[event].push(callback)
   }
-  
   emit(event, data) {
     if (this.events[event]) {
       this.events[event].forEach(callback => callback(data))
     }
   }
-  
   off(event, callback) {
     if (this.events[event]) {
       this.events[event] = this.events[event].filter(cb => cb !== callback)
@@ -477,7 +439,7 @@ export const eventBus = new EventBus()
 ```html
 <!-- Component A -->
 <script>
-import { eventBus } from '../utils/eventBus.js'
+import { eventBus } from '../utils/event-bus.js'
 
 export default class {
   sendMessage() {
@@ -490,22 +452,21 @@ export default class {
 ```html
 <!-- Component B -->
 <script>
-import { eventBus } from '../utils/eventBus.js'
+import { eventBus } from '../utils/event-bus.js'
 
 export default class {
   initialize() {
     this.messages = []
-    
-    // Listen for messages
+
+    // listen for messages
     this.messageHandler = (data) => {
       this.messages.push(data)
     }
-    
     eventBus.on('message', this.messageHandler)
   }
-  
+
   teardown() {
-    // Clean up listener
+    // clean up listener
     eventBus.off('message', this.messageHandler)
   }
 }
@@ -667,27 +628,21 @@ import { mount } from '@peak/test-utils'
 describe('x-counter', () => {
   it('increments count when button is clicked', async () => {
     const wrapper = mount('x-counter')
-    
     expect(wrapper.text()).toContain('0')
-    
     await wrapper.find('button[data-action="increment"]').click()
-    
     expect(wrapper.text()).toContain('1')
   })
-  
+
   it('accepts initial count prop', () => {
     const wrapper = mount('x-counter', {
       props: { count: 5 }
     })
-    
     expect(wrapper.text()).toContain('5')
   })
-  
+
   it('emits change event when count changes', async () => {
     const wrapper = mount('x-counter')
-    
     await wrapper.find('button[data-action="increment"]').click()
-    
     expect(wrapper.emitted('change')).toBeTruthy()
     expect(wrapper.emitted('change')[0]).toEqual([{ count: 1 }])
   })
@@ -706,99 +661,22 @@ import { mount } from '@peak/test-utils'
 describe('Todo App Integration', () => {
   it('adds and removes todos', async () => {
     const wrapper = mount('x-todo-app')
-    
-    // Add a todo
+
+    // add a todo
     const input = wrapper.find('input[placeholder="Add todo"]')
     const addButton = wrapper.find('button[data-action="add"]')
-    
+
     await input.setValue('Test todo')
     await addButton.click()
-    
+
     expect(wrapper.text()).toContain('Test todo')
-    
-    // Remove the todo
+
+    // remove the todo
     const removeButton = wrapper.find('button[data-action="remove"]')
     await removeButton.click()
-    
+
     expect(wrapper.text()).not.toContain('Test todo')
   })
 })
 ```
 
-## Best Practices
-
-### 1. Single Responsibility
-Each component should have a single, well-defined purpose:
-
-```html
-<!-- Good: Focused component -->
-<!-- components/x-user-avatar.html -->
-<template>
-  <img :src="user.avatar" :alt="user.name" class="avatar">
-</template>
-
-<!-- Avoid: Component doing too much -->
-<!-- components/x-user-everything.html -->
-<template>
-  <div>
-    <img :src="user.avatar">
-    <form @submit="updateUser">...</form>
-    <div class="user-posts">...</div>
-    <div class="user-settings">...</div>
-  </div>
-</template>
-```
-
-### 2. Clear Props Interface
-Make component APIs clear and predictable:
-
-```html
-<script>
-export default class {
-  // Good: Clear, documented props
-  static props = ['user', 'size', 'showStatus']
-  
-  initialize() {
-    // Validate and set defaults
-    this.size = this.size || 'medium'
-    this.showStatus = this.showStatus !== false
-  }
-}
-</script>
-```
-
-### 3. Proper Event Naming
-Use descriptive event names:
-
-```javascript
-// Good
-this.$emit('user-updated', user)
-this.$emit('item-selected', item)
-this.$emit('form-submitted', formData)
-
-// Avoid
-this.$emit('click', data)
-this.$emit('change', data)
-this.$emit('event', data)
-```
-
-### 4. Cleanup Resources
-Always clean up in the teardown method:
-
-```javascript
-teardown() {
-  // Clear timers
-  clearInterval(this.timer)
-  
-  // Remove event listeners
-  window.removeEventListener('resize', this.handleResize)
-  
-  // Cancel requests
-  this.abortController?.abort()
-  
-  // Destroy third-party instances
-  this.chart?.destroy()
-}
-```
-
-Peak.js components provide a powerful foundation for building maintainable, reusable user interfaces that scale with your application's complexity.

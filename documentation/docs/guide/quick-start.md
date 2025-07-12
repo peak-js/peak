@@ -9,8 +9,8 @@ Peak.js requires no build tools or complex setup. Simply include it in your HTML
 ### Option 1: Load from a CDN
 
 ```html
+<!-- index.html -->
 <!doctype html>
-<html>
 <head>
   <title>My Peak.js App</title>
 </head>
@@ -21,7 +21,6 @@ Peak.js requires no build tools or complex setup. Simply include it in your HTML
     component('x-app', '/components/x-app.html')
   </script>
 </body>
-</html>
 ```
 
 ### Option 2: Install via Package Manager
@@ -31,13 +30,11 @@ Peak.js requires no build tools or complex setup. Simply include it in your HTML
 npm install peak-js
 ```
 
-```html
-<script type="module">
-  import { component } from 'peak-js'
-  // Your app code here
-</script>
+```javascript
+// main.js
+import { component } from 'peak-js/core'
+component('x-app', '/components/x-app.html')
 ```
-
 
 ## Your First Component
 
@@ -58,9 +55,9 @@ Create a file called `components/x-counter.html`:
     <div class="buttons">
       <button @click="decrement" :disabled="count <= 0">-</button>
       <button @click="increment">+</button>
-      <button @click="reset" x-show="count > 0">Reset</button>
     </div>
     <p class="status" x-text="statusMessage"></p>
+    <button @click="reset" x-show="count != 0">Reset</button>
   </div>
 </template>
 
@@ -69,24 +66,20 @@ export default class {
   initialize() {
     this.count = 0
   }
-  
-  increment() {
-    this.count++
-  }
-  
-  decrement() {
-    this.count--
-  }
-  
-  reset() {
-    this.count = 0
-  }
-  
   get statusMessage() {
     if (this.count === 0) return "Click + to start counting!"
     if (this.count === 1) return "You've got one!"
-    if (this.count < 10) return `Count is ${this.count}`
+    if (this.count <= 10) return `Count is ${this.count}`
     return "You're counting high!"
+  }
+  increment() {
+    this.count++
+  }
+  decrement() {
+    this.count--
+  }
+  reset() {
+    this.count = 0
   }
 }
 </script>
@@ -101,42 +94,34 @@ export default class {
   text-align: center;
   font-family: system-ui, sans-serif;
 }
-
 .count-display {
   margin: 20px 0;
 }
-
 .count {
   font-size: 3rem;
   font-weight: bold;
   color: #2563eb;
 }
-
 .buttons {
   display: flex;
   gap: 10px;
   justify-content: center;
   margin: 20px 0;
 }
-
-.buttons button {
+button {
   padding: 10px 20px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: white;
   cursor: pointer;
   font-size: 1rem;
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
-
-.buttons button:hover:not(:disabled) {
-  background: #f3f4f6;
-}
-
-.buttons button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .status {
   color: #6b7280;
   font-style: italic;
@@ -149,26 +134,13 @@ export default class {
 Create an `index.html` file:
 
 ```html
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My First Peak.js App</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 40px;
-      background: #f8fafc;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    h1 {
       text-align: center;
-      color: #1e293b;
     }
   </style>
 </head>
@@ -179,16 +151,14 @@ Create an `index.html` file:
   </div>
   <script type="module">
     import { component } from 'https://unpkg.com/@peak-js/core'
-    // Register the counter component
     component('x-counter', './components/x-counter.html')
   </script>
 </body>
-</html>
 ```
 
 ### 3. Serve Your App
 
-Since we're using ES modules, you'll need to serve your files over HTTP (not file://). You can use any static file server:
+Since we're using ES modules, you'll need to serve your files over HTTP (not `file://`). You can use any static file server:
 
 ```bash
 # static file server
