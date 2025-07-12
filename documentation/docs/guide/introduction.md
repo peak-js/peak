@@ -5,7 +5,7 @@ Peak.js is a lightweight, reactive web framework that lets you build modern web 
 ## Why Peak.js?
 
 ### Zero Setup Required
-Just include Peak.js in your HTML file and start writing components. No build step, no configuration files, no complex toolchain.
+Just include Peak.js in your HTML file and start writing components. No build step, no configuration files, no complex toolchain (unless you want).
 
 ### Reactive by Design
 Built-in reactivity system automatically updates your UI when data changes. No manual DOM manipulation required.
@@ -14,7 +14,7 @@ Built-in reactivity system automatically updates your UI when data changes. No m
 Based on standard Web Components APIs, ensuring forward compatibility and interoperability with other frameworks.
 
 ### Lightweight
-Only ~5kb gzipped, Peak.js gives you powerful features without bloating your application.
+Only ~5kb gzipped, Peak.js gives you powerful features with a minimum of complexity.
 
 ## Key Features
 

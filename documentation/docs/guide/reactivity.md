@@ -150,7 +150,7 @@ this.$watch('user', () => {
 })
 ```
 
-## Reactivity Gotchas
+## Reactivity Niceties
 
 ### Direct Index Assignment
 When working with arrays, direct index assignment works:
@@ -168,8 +168,14 @@ Deleting properties is reactive:
 delete this.user.email
 ```
 
+### Property Reassignment
+```javascript
+// ✅ This works and triggers updates
+this.items = []
+```
+
 ### Non-reactive Properties
-Properties that start with underscore are not made reactive (by convention):
+Properties that start with underscore are not made reactive:
 
 ```javascript
 this._internal = "not reactive" // Won't trigger updates
@@ -197,11 +203,11 @@ this.$render()
 ```
 
 ### Avoiding Reactivity
-If you need to set a property without triggering reactivity, access the underlying value:
+If you need to set a property without triggering reactivity, access the underlying state value:
 
 ```javascript
 // Access the raw object without triggering reactivity
-this.data.__target__.someProperty = "non-reactive change"
+this._state.items.updatedTime = Date.now()
 ```
 
 ## Example: Todo List
@@ -213,7 +219,7 @@ Here's a complete example showing reactivity in action:
   <div>
     <input x-model="newTodo" @keyup.enter="addTodo">
     <button @click="addTodo">Add Todo</button>
-    
+
     <ul>
       <li x-for="todo in visibleTodos">
         <input type="checkbox" x-model="todo.completed">
@@ -221,9 +227,9 @@ Here's a complete example showing reactivity in action:
         <button @click="removeTodo(todo)">×</button>
       </li>
     </ul>
-    
+
     <p x-text="stats"></p>
-    
+
     <button @click="filter = 'all'" :class="{ active: filter === 'all' }">All</button>
     <button @click="filter = 'active'" :class="{ active: filter === 'active' }">Active</button>
     <button @click="filter = 'completed'" :class="{ active: filter === 'completed' }">Completed</button>
@@ -237,7 +243,7 @@ export default class {
     this.newTodo = ""
     this.filter = "all"
   }
-  
+
   addTodo() {
     if (this.newTodo.trim()) {
       this.todos.push({
@@ -248,12 +254,12 @@ export default class {
       this.newTodo = ""
     }
   }
-  
+
   removeTodo(todo) {
     const index = this.todos.indexOf(todo)
     this.todos.splice(index, 1)
   }
-  
+
   get visibleTodos() {
     switch (this.filter) {
       case 'active': return this.todos.filter(t => !t.completed)
@@ -261,7 +267,7 @@ export default class {
       default: return this.todos
     }
   }
-  
+
   get stats() {
     const total = this.todos.length
     const completed = this.todos.filter(t => t.completed).length
@@ -282,10 +288,3 @@ export default class {
 }
 </style>
 ```
-
-This example demonstrates:
-- Reactive arrays (`todos`)
-- Reactive objects (individual todo items)
-- Computed properties (`visibleTodos`, `stats`)
-- Two-way data binding (`x-model`)
-- Automatic UI updates when data changes

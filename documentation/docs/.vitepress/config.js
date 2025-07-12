@@ -3,12 +3,11 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Peak.js',
   description: 'Easy reactive web framework with no setup required',
-  
+
   themeConfig: {
+    logo: '/logo.png',
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
-      { text: 'API Reference', link: '/api/' },
-      { text: 'Examples', link: '/examples/' }
     ],
 
     sidebar: {
@@ -54,12 +53,11 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/user/peak.js' }
+      { icon: 'github', link: 'https://github.com/peak-js' }
     ],
 
     footer: {
-      message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024 Peak.js Contributors'
+      copyright: 'Copyright © 2025 David Chester &lt;david@chester.cx&gt;',
     }
   }
 })
