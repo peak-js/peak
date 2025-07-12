@@ -16,7 +16,7 @@ The fastest way to try Peak.js is to include it directly from a CDN:
   <x-app></x-app>
 
   <script type="module">
-    import { component } from 'https://unpkg.com/peak-js@latest/dist/peak.esm.js'
+    import { component } from 'https://unpkg.com/@peak-js/core'
 
     component('x-app', `
       <template>
@@ -43,7 +43,7 @@ Download Peak.js and host it yourself:
 
 ```bash
 # Download the latest version
-curl -o peak.js https://unpkg.com/peak-js@latest/dist/peak.esm.js
+curl -o peak.js https://unpkg.com/@peak-js/core
 ```
 
 Then include it in your HTML:
@@ -85,20 +85,10 @@ my-app/
 
 ```bash
 # Install Peak.js
-npm install peak-js
+npm install @peak-js/core
 
 # Install with development dependencies
-npm install --save-dev peak-js
-```
-
-### Yarn
-
-```bash
-# Install Peak.js
-yarn add peak-js
-
-# Install with development dependencies
-yarn add --dev peak-js
+npm install --save-dev @peak-js/core
 ```
 
 ## Building for Production with Vite
@@ -111,7 +101,7 @@ npm create vite@latest my-peak-app -- --template vanilla
 cd my-peak-app
 
 # Install Peak.js
-npm install peak-js
+npm install @peak-js/core
 
 # Install Vite plugin
 npm install --save-dev @peak-js/vite-plugin
@@ -146,60 +136,6 @@ import { router } from './peak.js'
 
 router.route('/', '/views/home.html')
 </script>
-```
-
-## TypeScript Support
-
-### Installation
-
-```bash
-# Install TypeScript definitions
-npm install --save-dev typescript @types/peak-js
-
-# Or generate types automatically
-npm install --save-dev @peak-js/typescript-plugin
-```
-
-### TypeScript Configuration
-
-```json
-// tsconfig.json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["peak-js"]
-  },
-  "include": [
-    "src/**/*",
-    "components/**/*"
-  ]
-}
-```
-
-### Type Definitions
-
-```typescript
-// types/components.d.ts
-declare module '*.html' {
-  const component: string
-  export default component
-}
-
-// Component type definitions
-export interface PeakComponent {
-  initialize?(): void
-  mounted?(): void
-  teardown?(): void
-  $emit(event: string, data?: any): void
-  $watch(expression: string, callback: () => void): void
-  $refs: Record<string, HTMLElement>
-}
 ```
 
 ## Next Steps

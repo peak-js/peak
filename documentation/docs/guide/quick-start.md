@@ -17,7 +17,7 @@ Peak.js requires no build tools or complex setup. Simply include it in your HTML
 <body>
   <x-app></x-app>
   <script type="module">
-    import { component } from 'https://unpkg.com/peak-js@latest/dist/peak.js'
+    import { component } from 'https://unpkg.com/@peak-js/core'
     component('x-app', '/components/x-app.html')
   </script>
 </body>
@@ -162,12 +162,10 @@ Create an `index.html` file:
       padding: 40px;
       background: #f8fafc;
     }
-    
     .container {
       max-width: 800px;
       margin: 0 auto;
     }
-    
     h1 {
       text-align: center;
       color: #1e293b;
@@ -179,10 +177,8 @@ Create an `index.html` file:
     <h1>Welcome to Peak.js!</h1>
     <x-counter></x-counter>
   </div>
-  
   <script type="module">
-    import { component } from 'https://unpkg.com/peak-js@latest/dist/peak.js'
-    
+    import { component } from 'https://unpkg.com/@peak-js/core'
     // Register the counter component
     component('x-counter', './components/x-counter.html')
   </script>
@@ -195,14 +191,8 @@ Create an `index.html` file:
 Since we're using ES modules, you'll need to serve your files over HTTP (not file://). You can use any static file server:
 
 ```bash
-# Using Python (if you have it installed)
+# static file server
 python -m http.server 8000
-
-# Using Node.js (if you have it installed)
-npx serve .
-
-# Using PHP (if you have it installed)
-php -S localhost:8000
 ```
 
 Open your browser to `http://localhost:8000` and you'll see your counter component in action!
@@ -279,7 +269,6 @@ Create a new component `components/x-todo-list.html`:
       <input x-model="newTodo" placeholder="What needs to be done?" required>
       <button type="submit">Add</button>
     </form>
-    
     <ul x-show="todos.length > 0">
       <li x-for="todo in todos" :key="todo.id">
         <input type="checkbox" x-model="todo.completed">
@@ -287,7 +276,6 @@ Create a new component `components/x-todo-list.html`:
         <button @click="removeTodo(todo)">×</button>
       </li>
     </ul>
-    
     <p x-show="todos.length === 0">No todos yet! Add one above.</p>
   </div>
 </template>
@@ -298,7 +286,7 @@ export default class {
     this.todos = []
     this.newTodo = ""
   }
-  
+
   addTodo() {
     if (this.newTodo.trim()) {
       this.todos.push({
@@ -309,7 +297,7 @@ export default class {
       this.newTodo = ""
     }
   }
-  
+
   removeTodo(todoToRemove) {
     this.todos = this.todos.filter(todo => todo !== todoToRemove)
   }
@@ -330,11 +318,11 @@ Create a parent component that manages multiple counters:
   <div>
     <h2>Counter Manager</h2>
     <p>Total across all counters: <span x-text="totalCount"></span></p>
-    
+
     <div x-for="counter in counters" :key="counter.id">
       <x-counter @count-changed="updateTotal"></x-counter>
     </div>
-    
+
     <button @click="addCounter">Add Counter</button>
   </div>
 </template>

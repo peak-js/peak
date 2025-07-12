@@ -25,7 +25,7 @@ First, add the router view component to your HTML, and register views and compon
   <x-router-view></x-router-view>
 
   <script type="module">
-    import { component, router } from 'peak'
+    import { component, router } from '@peak-js/core'
 
     // define routes
     router.route('/', '/views/home.html')
@@ -168,7 +168,7 @@ export default class {
 </template>
 
 <script>
-import { route, router } from 'peak'
+import { route, router } from '@peak-js/core'
 
 export default class {
   initialize() {
@@ -273,7 +273,7 @@ router.replace('/login')
 </template>
 
 <script>
-import { router } from 'peak'
+import { router } from '@peak-js/core'
 
 export default class {
   initialize() {
@@ -360,7 +360,7 @@ Implement guards within route components:
 ```html
 <!-- views/admin-dashboard.html -->
 <script>
-import { router } from 'peak'
+import { router } from '@peak-js/core'
 
 export default class {
   initialize() {
@@ -423,7 +423,7 @@ router.route('/dashboard/settings', '/views/dashboard/settings.html')
 </template>
 
 <script>
-import { route } from 'peak'
+import { route } from '@peak-js/core'
 
 export default class {
   isActive(path) {

@@ -44,7 +44,7 @@ npm install peak-js
 ```javascript
 // vite.config.js
 import { defineConfig } from 'vite'
-import peakPlugin from 'peak-js/vite-plugin'
+import peakPlugin from '@peak-js/vite-plugin'
 
 export default defineConfig({
   plugins: [
@@ -87,7 +87,7 @@ With the Vite plugin, components are automatically registered:
 ```javascript
 // main.js
 import 'virtual:peak-components' // Auto-registers all components
-import { router } from 'peak-js'
+import { router } from '@peak-js/core'
 
 // Define routes
 router.route('/', '/views/home.html')
@@ -117,67 +117,6 @@ export default defineConfig({
 })
 ```
 
-## Production Optimizations
-
-### Component Bundling
-
-Bundle components for better caching:
-
-```javascript
-// build/bundle-components.js
-import { bundleComponents } from 'peak-js/bundler'
-
-const components = await bundleComponents({
-  input: 'src/components/**/*.html',
-  output: 'dist/components.bundle.js',
-
-  // Optimization options
-  minify: true,
-  treeshake: true,
-  splitChunks: true
-})
-
-console.log(`Bundled ${components.length} components`)
-```
-
-### Code Splitting
-
-Split components by route or feature:
-
-```javascript
-// Router with dynamic imports
-import { router } from 'peak-js'
-
-router.route('/', () => import('./views/home.html'))
-router.route('/admin', () => import('./views/admin/dashboard.html'))
-router.route('/shop', () => import('./views/shop/catalog.html'))
-```
-
-### Asset Optimization
-
-Optimize images and other assets:
-
-```javascript
-// vite.config.js
-import { defineConfig } from 'vite'
-import { imageOptimize } from 'vite-plugin-imagemin'
-
-export default defineConfig({
-  plugins: [
-    imageOptimize({
-      gifsicle: { optimizationLevel: 7 },
-      mozjpeg: { quality: 80 },
-      pngquant: { quality: [0.65, 0.8] },
-      svgo: {
-        plugins: [
-          { name: 'removeViewBox', active: false }
-        ]
-      }
-    })
-  ]
-})
-```
-
 ## Server-Side Rendering (SSR)
 
 ### Express.js Setup
@@ -185,7 +124,7 @@ export default defineConfig({
 ```javascript
 // server.js
 import express from 'express'
-import { renderToString } from 'peak/ssr'
+import { renderToString } from '@peak-js/ssr'
 
 const app = express()
 

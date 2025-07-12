@@ -37,7 +37,7 @@ Register components and use them directly in markup:
 <x-counter></x-counter>
 
 <script type="module">
-  import { component } from '/vendor/peak.js'
+  import { component } from './peak.js'
   component('x-counter', '/components/x-counter.html')
 </script>
 ```
