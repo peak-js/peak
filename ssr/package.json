@@ -1,17 +1,35 @@
 {
-  "name": "peak-ssr",
+  "name": "@peak-js/ssr",
   "version": "1.0.0",
-  "description": "Server side rendering for Peak",
+  "description": "Server-side rendering for Peak.js framework",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "node tests"
   },
+  "keywords": [
+    "ssr",
+    "server-side-rendering",
+    "peak",
+    "peakjs",
+    "web-framework"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peak-js/peak-js.git",
+    "directory": "ssr"
+  },
+  "homepage": "https://peakjs.dev",
+  "author": "David Chester",
+  "license": "MIT",
   "dependencies": {
     "linkedom": "^0.18.5"
   },
   "devDependencies": {
     "express": "^4.18.0"
+  },
+  "peerDependencies": {
+    "@peak-js/core": "^1.0.0"
   }
 }
 
