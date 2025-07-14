@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { parse as parseHtml } from 'node-html-parser'
 
-export default function ({ dirs = ['components','views'] } = {}) {
+export default function ({ componentDirs = ['components','views'] } = {}) {
   const virtualModuleId = 'virtual:peak-components'
   const resolvedVirtualModuleId = '\0' + virtualModuleId
 
@@ -16,7 +16,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
 
     const componentPaths = []
 
-    for (const dir of dirs) {
+    for (const dir of componentDirs) {
       const folder = path.resolve(process.cwd(), dir)
       if (!fs.existsSync(folder)) continue
 
@@ -330,7 +330,7 @@ export default function ({ dirs = ['components','views'] } = {}) {
       let isComponentFile = false
       let componentPath = null
 
-      for (const dir of dirs) {
+      for (const dir of componentDirs) {
         const dirPath = path.resolve(process.cwd(), dir)
         if (ctx.file.startsWith(dirPath)) {
           const relativePath = path.relative(dirPath, ctx.file)

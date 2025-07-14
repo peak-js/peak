@@ -36,7 +36,7 @@ For development and build optimizations, integrate with Vite:
 npm init vite@latest my-peak-app -- --template vanilla
 cd my-peak-app
 npm install
-npm install peak-js
+npm install @peak-js/core
 ```
 
 ### Vite Configuration
@@ -49,34 +49,10 @@ import peakPlugin from '@peak-js/vite-plugin'
 export default defineConfig({
   plugins: [
     peakPlugin({
-      // auto-register components from these directories
-      componentDirs: ['src/components', 'src/widgets'],
-
-      // enable hot module replacement for components
+      componentDirs: ['src/components'],
       hmr: true,
-
-      // generate TypeScript definitions
-      generateTypes: true
     })
   ],
-
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-    minify: 'terser',
-
-    rollupOptions: {
-      input: {
-        main: './index.html',
-        admin: './admin.html'
-      }
-    }
-  },
-
-  server: {
-    port: 3000,
-    open: true
-  }
 })
 ```
 
@@ -86,7 +62,7 @@ With the Vite plugin, components are automatically registered:
 
 ```javascript
 // main.js
-import 'virtual:peak-components' // Auto-registers all components
+import 'virtual:peak-components' // auto-registers all components
 import { router } from '@peak-js/core'
 
 // Define routes
