@@ -49,7 +49,7 @@ import peakPlugin from '@peak-js/vite-plugin'
 export default defineConfig({
   plugins: [
     peakPlugin({
-      componentDirs: ['src/components'],
+      componentDirs: ['src/components', 'src/views'],
       hmr: true,
     })
   ],
@@ -66,8 +66,8 @@ import 'virtual:peak-components' // auto-registers all components
 import { router } from '@peak-js/core'
 
 // Define routes
-router.route('/', '/views/home.html')
-router.route('/about', '/views/about.html')
+router.route('/', 'src/views/home.html')
+router.route('/about', 'src/views/about.html')
 ```
 
 ### Hot Module Replacement
