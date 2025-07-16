@@ -30,9 +30,22 @@ img[src="code-hero.svg"] {
   position: relative !important;
 }
 
+.image-container {
+  width: auto !important;
+  height: auto !important;
+}
+.main {
+  order: unset !important;
+}
+.main + .image {
+  order: unset;
+  margin: 48px 0 0 0;
+}
+
 @media (min-width: 960px) {
   .VPHero.has-image .main {
     max-width: 420px !important;
+    order: unset;
     padding-right: 20px;
     .image-container {
       transform: translateY(-32px);
