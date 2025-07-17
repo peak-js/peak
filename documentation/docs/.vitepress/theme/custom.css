@@ -4,9 +4,9 @@
     position: fixed;
     inset: 0;
     background-image:
-      radial-gradient(2500px circle at calc(100% + 100px) calc(100% + 100px), #cc88ff14 0%, transparent 50%),
-      radial-gradient(2500px circle at calc(0% - 100px) calc(0% - 100px), #88ccff14 0%, transparent 50%),
-      radial-gradient(2200px circle at calc(0% - 200px) calc(100% + 100px), #88aa8814 0%, transparent 50%);
+      radial-gradient(200vw circle at calc(100% + 100px) calc(100% + 100px), #cc88ff18 0%, transparent 50%),
+      radial-gradient(200vw circle at calc(0% - 100px) calc(0% - 100px), #88ccff18 0%, transparent 50%),
+      radial-gradient(200vw circle at calc(0% - 200px) calc(100% + 100px), #88aa8818 0%, transparent 50%);
 
     pointer-events: none;
     z-index: 100;
@@ -18,7 +18,7 @@
 
 img[src="code-hero.svg"] {
   max-width: 100% !important;
-  max-height: 300px !important;
+  max-height: 360px !important;
   margin-left: auto !important;
   margin-right: auto !important;
   top: unset !important;
@@ -33,13 +33,21 @@ img[src="code-hero.svg"] {
 .image-container {
   width: auto !important;
   height: auto !important;
+  transform: scale(1) !important;
 }
 .main {
   order: unset !important;
 }
 .main + .image {
   order: unset;
-  margin: 48px 0 0 0;
+  margin: 0;
+}
+
+.VPHero {
+  padding-top: 15vh !important;
+  & > .container {
+    align-items: center;
+  }
 }
 
 @media (min-width: 960px) {
@@ -47,8 +55,5 @@ img[src="code-hero.svg"] {
     max-width: 420px !important;
     order: unset;
     padding-right: 20px;
-    .image-container {
-      transform: translateY(-32px);
-    }
   }
 }
