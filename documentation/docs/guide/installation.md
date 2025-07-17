@@ -1,57 +1,34 @@
 # Installation
 
-Peak.js is designed to be as simple as possible to get started with. You can use it directly in the browser without any build tools. However, you _can_ build with Vite if you prefer &mdash; for bundling large projects, and/or for the beautiful hot module reloading in dev so you can see changes in browser immediately when you change your code.
+Peak.js is designed to be as simple as possible to get started with. You can use it directly in the browser without any build tools. However, you _can_ build with Vite if you prefer &mdash; for bundling large projects, and/or for the beautiful hot module reloading (HMR) in dev so you can see changes in browser immediately when you change your code.
 
 ## Loading via CDN
 
 The fastest way to try Peak.js is to include it directly from a CDN:
 
 ```html
-<!doctype html>
-<html>
-<head>
-  <title>My Peak.js App</title>
-</head>
+<!-- index.html -->
 <body>
   <x-app></x-app>
 
   <script type="module">
     import { component } from 'https://unpkg.com/@peak-js/core'
-
-    component('x-app', `
-      <template>
-        <h1>Hello, Peak.js!</h1>
-        <p>You're using version <span x-text="version"></span></p>
-      </template>
-
-      <script>
-        export default class {
-          initialize() {
-            this.version = '1.0.0'
-          }
-        }
-      </script>
-    `)
+    component('x-app', '/components/x-app.html');
   </script>
 </body>
-</html>
 ```
-
-## Download and Self-Host
-
-Download Peak.js and host it yourself:
-
-```bash
-# Download the latest version
-curl -o peak.js https://unpkg.com/@peak-js/core
-```
-
-Then include it in your HTML:
 
 ```html
-<script type="module">
-  import { component } from './peak.js'
-  // Your app code here
+<!-- components/x-app.html -->
+<template>
+  <h1><span x-text="greeting" />, Peak.js!</h1>
+</template>
+<script>
+  export default class {
+    initialize() {
+      this.greeting = 'Hello'
+    }
+  }
 </script>
 ```
 
@@ -117,9 +94,7 @@ import peakPlugin from '@peak-js/vite-plugin'
 export default defineConfig({
   plugins: [
     peakPlugin({
-      // Auto-register components
       componentDirs: ['src/components'],
-      // Enable HMR for components
       hmr: true
     })
   ]
