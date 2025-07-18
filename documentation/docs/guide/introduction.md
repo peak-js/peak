@@ -29,7 +29,7 @@ Only ~5kb gzipped, Peak.js gives you powerful features with a minimum of complex
 
 ## Philosophy
 
-Peak.js follows the principle of **progressive enhancement**. Start simple with plain HTML files, and add more sophisticated features as your application grows. You can always opt into build tools later without rewriting your components.
+Peak.js tries to make easy things easy, and hard things at least approachable. Common patterns should have as little boiler-plate as possible -- but not too little as to be mysterious! If Vue's "Options API" is too resistant to abstraction, and Vue's "Composition API" is lower-level than you might want for every day use, then Peak.js tries to strike a balance somewhere in the middle.  If you like Alpine.js but wish you could have reusable components, then this might be for you.
 
 ## Getting Started
 
