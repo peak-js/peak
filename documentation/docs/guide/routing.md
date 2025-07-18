@@ -1,6 +1,6 @@
 # Routing
 
-Peak.js includes an optional built-in router that integrates seamlessly with the History API. The router allows you to create single-page applications (SPAs) with client-side navigation while maintaining clean, bookmarkable URLs.
+Peak.js includes an optional built-in router that integrates with the History API. The router allows you to create single-page applications (SPAs) with client-side navigation while maintaining clean, bookmarkable URLs.
 
 ## Basic Routing Setup
 
@@ -9,8 +9,7 @@ Peak.js includes an optional built-in router that integrates seamlessly with the
 First, add the router view component to your HTML, and register views and components:
 
 ```html
-<!DOCTYPE html>
-<html>
+<!doctype html>
 <head>
   <title>My SPA</title>
 </head>
@@ -41,7 +40,6 @@ First, add the router view component to your HTML, and register views and compon
     })
   </script>
 </body>
-</html>
 ```
 
 ### Create Route View Components
@@ -103,7 +101,7 @@ export default class {
 Define routes with dynamic parameters using the `:param` syntax:
 
 ```javascript
-// Route definitions
+// route definitions
 router.route('/user/:id', '/views/user-profile.html')
 router.route('/blog/:category/:slug', '/views/blog-post.html')
 router.route('/shop/:category', '/views/category.html')
@@ -142,7 +140,7 @@ export default class {
 
     <div class="search-form">
       <input x-model="searchQuery" @input="debouncedSearch" placeholder="Search...">
-      <select x-model="selectedCategory" @change="performSearch">
+      <select x-model="selectedCategory" @change="query">
         <option value="">All Categories</option>
         <option value="frameworks">Frameworks</option>
         <option value="tools">Tools</option>
@@ -161,7 +159,7 @@ export default class {
 
     <div class="pagination">
       <button @click="prevPage" :disabled="currentPage === 1">Previous</button>
-      <span x-text="`Page ${currentPage} of ${totalPages}`"></span>
+      <span x-text="`Page ${this.currentPage} of ${this.totalPages}`"></span>
       <button @click="nextPage" :disabled="currentPage === totalPages">Next</button>
     </div>
   </div>
@@ -179,18 +177,18 @@ export default class {
     this.totalPages = 1
 
     if (this.searchQuery) {
-      this.performSearch()
+      this.query()
     }
   }
 
   debouncedSearch() {
     clearTimeout(this.searchTimer)
     this.searchTimer = setTimeout(() => {
-      this.performSearch()
+      this.query()
     }, 300)
   }
 
-  async performSearch() {
+  async query() {
     const params = new URLSearchParams({
       q: this.searchQuery,
       category: this.selectedCategory,
@@ -215,14 +213,14 @@ export default class {
   prevPage() {
     if (this.currentPage > 1) {
       this.currentPage--
-      this.performSearch()
+      this.query()
     }
   }
 
   nextPage() {
     if (this.currentPage < this.totalPages) {
       this.currentPage++
-      this.performSearch()
+      this.query()
     }
   }
 }
@@ -236,12 +234,12 @@ export default class {
 Navigate to a new route programmatically:
 
 ```javascript
-// Navigate to a new route
+// navigate to a new route
 router.push('/about')
 router.push('/user/123')
 router.push('/search?q=peak.js')
 
-// With state object
+// with state object
 router.push('/dashboard', { from: 'login' })
 ```
 
@@ -256,223 +254,16 @@ router.replace('/login')
 
 ### Navigation in Components
 
+Use regular `<a>` anchor tags to navigate between views.  If the `href` matches a registered route, then the navigation will happen via `router.push`.  Otherwise, the browser handles the navigation normally.
+
 ```html
 <template>
-  <div class="auth-form">
-    <form @submit.prevent="handleLogin">
-      <input x-model="email" type="email" required>
-      <input x-model="password" type="password" required>
-      <button type="submit" :disabled="loading">
-        <span x-show="!loading">Login</span>
-        <span x-show="loading">Logging in...</span>
-      </button>
-    </form>
+  <nav>
+    <!-- registered route navigation transparently via router.push -->
+    <a href="/about">About</a>
 
-    <p>Don't have an account? <a href="#" @click.prevent="goToSignup">Sign up</a></p>
-  </div>
+    <!-- route not registered handled natively -->
+    <a href="/microsites/upcoming-event">Catalina Wine Mixer 2030</a>
+  </nav>
 </template>
-
-<script>
-import { router } from '@peak-js/core'
-
-export default class {
-  initialize() {
-    this.email = ''
-    this.password = ''
-    this.loading = false
-  }
-
-  async handleLogin() {
-    this.loading = true
-
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: this.email,
-          password: this.password
-        })
-      })
-
-      if (response.ok) {
-        const { token, user } = await response.json()
-        localStorage.setItem('token', token)
-
-        // Redirect to dashboard
-        router.push('/dashboard')
-      } else {
-        this.error = 'Invalid credentials'
-      }
-    } catch (error) {
-      this.error = 'Login failed'
-    } finally {
-      this.loading = false
-    }
-  }
-
-  goToSignup() {
-    router.push('/signup')
-  }
-}
-</script>
 ```
-
-## Route Guards
-
-### Navigation Guards
-
-Implement route guards for authentication and authorization:
-
-```javascript
-// Global navigation guard
-router.on('beforeNavigation', (detail) => {
-  const { url } = detail
-  const isAuthenticated = localStorage.getItem('token')
-
-  // Protected routes
-  const protectedRoutes = ['/dashboard', '/profile', '/admin']
-  const isProtectedRoute = protectedRoutes.some(route => url.startsWith(route))
-
-  if (isProtectedRoute && !isAuthenticated) {
-    // Prevent navigation and redirect to login
-    detail.preventDefault()
-    router.replace('/login?redirect=' + encodeURIComponent(url))
-  }
-})
-
-// Admin only routes
-router.on('beforeNavigation', (detail) => {
-  const { url } = detail
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  if (url.startsWith('/admin') && user.role !== 'admin') {
-    detail.preventDefault()
-    router.replace('/unauthorized')
-  }
-})
-```
-
-### Component-Level Guards
-
-Implement guards within route components:
-
-```html
-<!-- views/admin-dashboard.html -->
-<script>
-import { router } from '@peak-js/core'
-
-export default class {
-  initialize() {
-    // Check authorization before rendering
-    if (!this.isAuthorized()) {
-      router.replace('/unauthorized')
-      return
-    }
-
-    this.loadDashboardData()
-  }
-
-  isAuthorized() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    return user.role === 'admin'
-  }
-
-  async loadDashboardData() {
-    // load admin data
-  }
-}
-</script>
-```
-
-## Nested Routes
-
-Create nested route structures for complex applications:
-
-```javascript
-router.route('/', '/views/home.html')
-router.route('/dashboard', '/views/dashboard/layout.html')
-router.route('/dashboard/overview', '/views/dashboard/overview.html')
-router.route('/dashboard/users', '/views/dashboard/users.html')
-router.route('/dashboard/settings', '/views/dashboard/settings.html')
-```
-
-```html
-<!-- views/dashboard/layout.html -->
-<template>
-  <div class="dashboard">
-    <aside class="sidebar">
-      <nav>
-        <a href="/dashboard/overview" :class="{ active: isActive('/dashboard/overview') }">
-          Overview
-        </a>
-        <a href="/dashboard/users" :class="{ active: isActive('/dashboard/users') }">
-          Users
-        </a>
-        <a href="/dashboard/settings" :class="{ active: isActive('/dashboard/settings') }">
-          Settings
-        </a>
-      </nav>
-    </aside>
-
-    <main class="content">
-      <!-- Nested router view for dashboard routes -->
-      <x-router-view></x-router-view>
-    </main>
-  </div>
-</template>
-
-<script>
-import { route } from '@peak-js/core'
-
-export default class {
-  isActive(path) {
-    return route.path === path
-  }
-}
-</script>
-```
-
-## Route Transitions
-
-Add smooth transitions between routes:
-
-```css
-/* Global transition styles */
-.page-enter {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.page-enter-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.page-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-```
-
-```javascript
-// add transition classes to router view
-router.on('beforeNavigation', () => {
-  const routerView = document.querySelector('x-router-view')
-  routerView.classList.add('page-leave-active')
-})
-
-router.on('navigation', () => {
-  const routerView = document.querySelector('x-router-view')
-  routerView.classList.remove('page-leave-active')
-  routerView.classList.add('page-enter', 'page-enter-active')
-
-  setTimeout(() => {
-    routerView.classList.remove('page-enter', 'page-enter-active')
-  }, 300)
-})
-```
-
