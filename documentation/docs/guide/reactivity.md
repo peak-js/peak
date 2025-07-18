@@ -1,10 +1,10 @@
 # Reactivity
 
-Peak.js features a powerful reactivity system that automatically updates your UI when data changes. Unlike frameworks that require special syntax or APIs, Peak.js makes any property on your component automatically reactive.
+When reactive data changes, the new state is automatically reflected in the UI.
 
 ## How Reactivity Works
 
-When you assign a value to a property in your component, Peak.js wraps it with a Proxy that intercepts property access and mutations. This allows the framework to track dependencies and update the DOM automatically.
+Component properties are reactive by default. That means once you assign values to component properties, if those properties are referenced in the course of evaluating the template, then when the values change, the template will be rendered again to reflect the new values.
 
 ```html
 <template>
@@ -19,7 +19,7 @@ export default class {
   initialize() {
     this.message = "Hello World"
   }
-  
+
   updateMessage() {
     this.message = "Hello Peak.js!" // UI updates automatically
   }
@@ -27,48 +27,6 @@ export default class {
 </script>
 ```
 
-## Reactive Data Types
-
-### Primitives
-Strings, numbers, booleans, and other primitives are automatically reactive:
-
-```javascript
-this.count = 0
-this.name = "Alice"
-this.isVisible = true
-```
-
-### Objects
-Objects are deeply reactive, meaning nested properties also trigger updates:
-
-```javascript
-this.user = {
-  name: "Alice",
-  profile: {
-    email: "alice@example.com",
-    preferences: {
-      theme: "dark"
-    }
-  }
-}
-
-// All of these trigger UI updates
-this.user.name = "Bob"
-this.user.profile.email = "bob@example.com"
-this.user.profile.preferences.theme = "light"
-```
-
-### Arrays
-Arrays and their elements are reactive:
-
-```javascript
-this.items = ['apple', 'banana', 'cherry']
-
-// These all trigger updates
-this.items.push('date')
-this.items[0] = 'apricot'
-this.items.sort()
-```
 
 ## Computed Properties
 
@@ -89,9 +47,38 @@ export default class {
     this.firstName = "John"
     this.lastName = "Doe"
   }
-  
+
   get fullName() {
     return `${this.firstName} ${this.lastName}`
+  }
+}
+</script>
+```
+
+## Observable Stores
+
+In order to share reactive state across components, use `observable`:
+
+```js
+// store.js
+import { observable } from 'peak-js/core'
+const store = observable({ count: 0 })
+export default store
+```
+
+Then, when you reference store values in components, then when the value change, the new state will be reflected in the component automatically:
+
+```html
+<!-- count-view.html -->
+<template>
+  Count is <span x-text="count"/>
+</template>
+
+<script>
+import store from './store.js'
+export default class {
+  get count() {
+    return store.count
   }
 }
 </script>
@@ -114,13 +101,13 @@ export default class {
   initialize() {
     this.search = ""
     this.results = []
-    
+
     // Watch for search changes
     this.$watch('search', () => {
       this.performSearch()
     })
   }
-  
+
   async performSearch() {
     if (this.search.length > 2) {
       this.results = await fetch(`/search?q=${this.search}`)
@@ -185,6 +172,7 @@ this.reactive = "will update UI" // Will trigger updates
 ## Performance Considerations
 
 ### Batched Updates
+
 Peak.js batches DOM updates using `requestAnimationFrame` to prevent excessive re-renders:
 
 ```javascript
@@ -195,6 +183,7 @@ this.count++
 ```
 
 ### Manual Updates
+
 If you need to trigger an update manually (rare), you can use `$render()`:
 
 ```javascript

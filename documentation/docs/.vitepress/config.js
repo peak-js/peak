@@ -24,7 +24,7 @@ export default defineConfig({
           text: 'Core Concepts',
           items: [
             { text: 'Components', link: '/guide/components' },
-            { text: 'Template Directives', link: '/guide/templates' },
+            { text: 'Templates', link: '/guide/templates' },
             { text: 'Reactivity', link: '/guide/reactivity' },
             { text: 'Event Handling', link: '/guide/events' },
             { text: 'Slots', link: '/guide/slots' }

@@ -1,6 +1,6 @@
-# Template Directives
+# Templates
 
-Peak.js provides a comprehensive set of template directives that make it easy to create dynamic, reactive user interfaces. These directives follow a familiar syntax similar to Vue.js and Alpine.js.
+Peak.js provides a set of template directives that make it easy to create dynamic, reactive user interfaces. These directives follow a familiar syntax similar to Vue.js and Alpine.js.
 
 ## Text and HTML Content
 
@@ -67,7 +67,7 @@ Conditionally render elements based on a condition:
   <div>
     <p x-if="user.isLoggedIn">Welcome back, <span x-text="user.name"></span>!</p>
     <p x-if="!user.isLoggedIn">Please log in to continue.</p>
-    
+
     <!-- With template wrapper -->
     <template x-if="showAdvancedOptions">
       <div class="advanced-panel">
@@ -110,12 +110,12 @@ Toggle element visibility with CSS display property:
 <template>
   <div>
     <button @click="togglePanel">Toggle Panel</button>
-    
+
     <!-- Element stays in DOM, just hidden/shown -->
     <div x-show="showPanel" class="panel">
       <p>This panel can be toggled!</p>
     </div>
-    
+
     <!-- With transition -->
     <div x-show="showModal" x-transition class="modal">
       <p>Modal content with smooth transition</p>
@@ -150,14 +150,14 @@ Render lists of items:
     <ul>
       <li x-for="item in items" x-text="item"></li>
     </ul>
-    
+
     <!-- With index -->
     <ol>
       <li x-for="(item, index) in items">
         <span x-text="index + 1"></span>: <span x-text="item"></span>
       </li>
     </ol>
-    
+
     <!-- Object iteration -->
     <dl>
       <template x-for="(value, key) in userProfile">
@@ -167,7 +167,7 @@ Render lists of items:
         </div>
       </template>
     </dl>
-    
+
     <!-- Complex objects -->
     <div class="user-grid">
       <div x-for="user in users" class="user-card" :key="user.id">
@@ -184,19 +184,19 @@ Render lists of items:
 export default class {
   initialize() {
     this.items = ['Apple', 'Banana', 'Cherry']
-    
+
     this.userProfile = {
       name: 'Alice Johnson',
       email: 'alice@example.com',
       role: 'Developer'
     }
-    
+
     this.users = [
       { id: 1, name: 'Alice', email: 'alice@example.com', avatar: '/alice.jpg' },
       { id: 2, name: 'Bob', email: 'bob@example.com', avatar: '/bob.jpg' }
     ]
   }
-  
+
   editUser(user) {
     console.log('Editing user:', user)
   }
