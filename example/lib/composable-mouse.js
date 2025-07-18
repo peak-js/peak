@@ -13,6 +13,6 @@ export default class {
     component.$on('teardown', () => {
       document.removeEventListener('pointermove', recordPosition)
     })
-    return observable(this.position)
+    return this.position
   }
 }

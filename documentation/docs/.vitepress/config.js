@@ -27,6 +27,7 @@ export default defineConfig({
             { text: 'Templates', link: '/guide/templates' },
             { text: 'Reactivity', link: '/guide/reactivity' },
             { text: 'Event Handling', link: '/guide/events' },
+            { text: 'Composition', link: '/guide/composition' },
             { text: 'Slots', link: '/guide/slots' }
           ]
         },

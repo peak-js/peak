@@ -473,6 +473,7 @@ export default class {
 </script>
 ```
 
+
 ## Advanced Component Patterns
 
 ### Higher-Order Components
