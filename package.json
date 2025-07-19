@@ -1,5 +1,5 @@
 {
-  "name": "peak-js",
+  "name": "@peak-js/core",
   "version": "1.0.1",
   "description": "Easy reactive web framework",
   "type": "module",
