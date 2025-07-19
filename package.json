@@ -1,16 +1,17 @@
 {
   "name": "peak-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Easy reactive web framework",
   "type": "module",
+  "files": [
+    "index.js"
+  ],
   "main": "index.js",
   "workspaces": [
-    "packages/peak",
-    "packages/ssr",
-    "packages/vite-plugin"
+    "ssr",
+    "vite-plugin"
   ],
   "scripts": {
-    "build:packages": "make packages",
     "test": "npx playwright test --config tests/playwright.config.js"
   },
   "devDependencies": {
