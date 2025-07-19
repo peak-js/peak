@@ -2,56 +2,20 @@
 
 Get up and running with Peak.js in just a few minutes! This guide will walk you through creating your first reactive component.
 
-## Installation
-
-Peak.js requires no build tools or complex setup. Simply include it in your HTML file:
-
-### Option 1: Load from a CDN
-
-```html
-<!-- index.html -->
-<!doctype html>
-<head>
-  <title>My Peak.js App</title>
-</head>
-<body>
-  <x-app></x-app>
-  <script type="module">
-    import { component } from 'https://unpkg.com/@peak-js/core'
-    component('x-app', '/components/x-app.html')
-  </script>
-</body>
-```
-
-### Option 2: Install via Package Manager
-
-```bash
-# install via npm or yarn etc
-npm install peak-js
-```
-
-```javascript
-// main.js
-import { component } from 'peak-js/core'
-component('x-app', '/components/x-app.html')
-```
-
 ## Your First Component
 
 Let's create a simple counter component to demonstrate Peak.js basics.
 
 ### 1. Create the Component File
 
-Create a file called `components/x-counter.html`:
+Create a file called `x-counter.html`:
 
 ```html
-<!-- components/x-counter.html -->
+<!-- x-counter.html -->
 <template>
   <div class="counter">
-    <h2>Counter Example</h2>
-    <div class="count-display">
-      <span class="count" x-text="count"></span>
-    </div>
+    <h2>Welcome to Peak.js</h2>
+    <b class="number" x-text="count" />
     <div class="buttons">
       <button @click="decrement" :disabled="count <= 0">-</button>
       <button @click="increment">+</button>
@@ -86,21 +50,17 @@ export default class {
 
 <style>
 .counter {
-  max-width: 300px;
-  margin: 0 auto;
-  padding: 20px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #eee;
   border-radius: 8px;
-  text-align: center;
   font-family: system-ui, sans-serif;
+  max-width: 300px;
+  margin: auto;
+  padding: 24px;
+  text-align: center;
 }
-.count-display {
-  margin: 20px 0;
-}
-.count {
+.number {
+  color: dodgerblue;
   font-size: 3rem;
-  font-weight: bold;
-  color: #2563eb;
 }
 .buttons {
   display: flex;
@@ -109,21 +69,10 @@ export default class {
   margin: 20px 0;
 }
 button {
-  padding: 10px 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  &:hover:not(:disabled) {
-    background: #f3f4f6;
-  }
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  padding: 1em 2em;
 }
 .status {
-  color: #6b7280;
+  color: #777;
   font-style: italic;
 }
 </style>
@@ -135,23 +84,11 @@ Create an `index.html` file:
 
 ```html
 <!doctype html>
-<head>
-  <title>My First Peak.js App</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      text-align: center;
-    }
-  </style>
-</head>
 <body>
-  <div class="container">
-    <h1>Welcome to Peak.js!</h1>
-    <x-counter></x-counter>
-  </div>
+  <x-counter></x-counter>
   <script type="module">
     import { component } from 'https://unpkg.com/@peak-js/core'
-    component('x-counter', './components/x-counter.html')
+    component('x-counter', 'x-counter.html')
   </script>
 </body>
 ```
@@ -162,7 +99,7 @@ Since we're using ES modules, you'll need to serve your files over HTTP (not `fi
 
 ```bash
 # static file server
-python -m http.server 8000
+python -m http.server
 ```
 
 Open your browser to `http://localhost:8000` and you'll see your counter component in action!
@@ -173,7 +110,7 @@ Let's break down what makes this work:
 
 ### Component Registration
 ```javascript
-component('x-counter', './components/x-counter.html')
+component('x-counter', 'x-counter.html')
 ```
 This registers a new custom element called `<x-counter>` that loads its template from the specified file.
 
@@ -205,7 +142,7 @@ Getter methods automatically become computed properties that update when their d
 
 Now that you have a basic component working, try these exercises:
 
-### Exercise 1: Add a Step Size
+### Exercise: Add a Step Size
 Modify the counter to allow custom step sizes:
 
 ```javascript
@@ -228,22 +165,22 @@ Add an input to control the step size:
 <input type="number" x-model="step" min="1" max="10">
 ```
 
-### Exercise 2: Create a Todo List
+## Another Example: A List of Things To Do
 Create a new component `components/x-todo-list.html`:
 
 ```html
 <template>
   <div class="todo-list">
     <h2>My Todo List</h2>
-    <form @submit.prevent="addTodo">
-      <input x-model="newTodo" placeholder="What needs to be done?" required>
+    <form @submit="addTodo">
+      <input x-model="newTodoText" placeholder="What needs doing?" required>
       <button type="submit">Add</button>
     </form>
     <ul x-show="todos.length > 0">
       <li x-for="todo in todos" :key="todo.id">
-        <input type="checkbox" x-model="todo.completed">
-        <span :class="{ completed: todo.completed }" x-text="todo.text"></span>
-        <button @click="removeTodo(todo)">×</button>
+        <input type="checkbox" :checked="todo.completed">
+        <span :class="{completed: this.todo.completed}" x-text="todo.text"></span>
+        <button @click="removeTodo(todo.id)">×</button>
       </li>
     </ul>
     <p x-show="todos.length === 0">No todos yet! Add one above.</p>
@@ -254,32 +191,43 @@ Create a new component `components/x-todo-list.html`:
 export default class {
   initialize() {
     this.todos = []
-    this.newTodo = ""
+    this.newTodoText = ''
   }
 
-  addTodo() {
-    if (this.newTodo.trim()) {
+  addTodo(e) {
+    e.preventDefault()
+    if (this.newTodoText.trim()) {
       this.todos.push({
         id: Date.now(),
-        text: this.newTodo.trim(),
-        completed: false
+        text: this.newTodoText.trim(),
+        completed: false,
       })
-      this.newTodo = ""
+      this.newTodoText = ''
     }
   }
 
-  removeTodo(todoToRemove) {
-    this.todos = this.todos.filter(todo => todo !== todoToRemove)
+  removeTodo(moribundTodoId) {
+    this.todos = this.todos.filter(todo => todo.id != moribundTodoId)
   }
 }
 </script>
 
 <style>
-/* Add your todo list styles here */
+.todo-list {
+  font-family: system-ui, sans-serif;
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+}
 </style>
 ```
 
-### Exercise 3: Component Communication
+## Common Patterns
+
+As you build more components, here are some patterns you'll use frequently:
+
+### Component Communication
 Create a parent component that manages multiple counters:
 
 ```html
@@ -298,11 +246,8 @@ Create a parent component that manages multiple counters:
 </template>
 ```
 
-## Common Patterns
-
-As you build more components, here are some patterns you'll use frequently:
-
 ### Form Handling
+
 ```html
 <form @submit.prevent="handleSubmit">
   <input x-model="form.email" type="email" required>
@@ -312,18 +257,11 @@ As you build more components, here are some patterns you'll use frequently:
 ```
 
 ### Loading States
-```html
-<div x-show="loading">Loading...</div>
-<div x-show="!loading">
-  <!-- Your content -->
-</div>
-```
 
-### Error Handling
 ```html
-<div x-show="error" class="error">
-  <p x-text="error"></p>
-  <button @click="clearError">Dismiss</button>
+<div x-if="loading">Loading...</div>
+<div x-else>
+  <!-- content -->
 </div>
 ```
 
