@@ -49,6 +49,7 @@ export const component = async (tagName, str) => {
   template.innerHTML = `${_template?.innerHTML || ''}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
+  tags[tagName.toLowerCase()] = true
 
   const _class = window.__peak?.getComponentClass
     ? await window.__peak.getComponentClass(str, script)
@@ -112,10 +113,11 @@ export const component = async (tagName, str) => {
         this._watchers.push([expr, fn])
       }
       if (this._initialized) {
+        const stashedContextId = _contextId
         _contextId = rand()
         instances[_contextId] = { $defer() { fn() } }
         evalInContext(this, expr)
-        _contextId = null
+        _contextId = stashedContextId
       }
     }
     $defer() {
@@ -183,7 +185,7 @@ export const component = async (tagName, str) => {
       }
     }
     _defineObservableProperty(prop, initialValue) {
-      if ((prop in this._state) || prop.startsWith('_')) return
+      if ((prop in this._state) || prop.startsWith('_') || prop.startsWith('$')) return
 
       this._state[prop] = observable(initialValue)
       const path = `${this.tagName}/${this._pk}/${prop}`
@@ -734,7 +736,7 @@ function hsh(str) {
 }
 
 function isPeak(e) {
-  return customElements.get(e.tagName?.toLowerCase()) && e._pk
+  return tags[e.tagName?.toLowerCase()]
 }
 
 function remove(arr, fn) {
