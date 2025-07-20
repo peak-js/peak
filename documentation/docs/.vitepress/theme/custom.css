@@ -24,7 +24,8 @@ img[src="code-hero.svg"] {
   top: unset !important;
   left: unset !important;
   transform: scale(1) !important;
-  background: #112;
+  background: #101018;
+  padding: 24px 48px 24px 24px;
   border-radius: 12px;
   padding-right: 32px;
   position: relative !important;
