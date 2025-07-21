@@ -114,15 +114,11 @@ button {
 
 ## Component Registration
 
-Register components using the `component()` function:
+Register components using the `component()` function.  Components are registered globally as custom elements, and so can be used directly anywhere in the document.
 
 ```javascript
 import { component } from './peak.js'
 
-// Register a single component
-component('x-card', './components/x-card.html')
-
-// Register multiple components
 component('x-button', './components/x-button.html')
 component('x-modal', './components/x-modal.html')
 component('x-form', './components/x-form.html')
@@ -149,13 +145,13 @@ Use the static `props` array to define accepted props:
 <script>
 export default class {
   static props = ['user', 'showActions']
-  
+
   initialize() {
-    // Props are automatically available
+    // props are automatically available and reactive
     console.log('User:', this.user)
     console.log('Show actions:', this.showActions)
   }
-  
+
   editUser() {
     this.$emit('edit', this.user)
   }
@@ -185,34 +181,6 @@ Pass props using attributes:
   :show-actions="canEdit(user)"
   @edit="handleEditUser">
 />
-```
-
-### Prop Validation
-
-Validate props in the component:
-
-```html
-<script>
-export default class {
-  static props = ['count', 'type', 'config']
-
-  initialize() {
-    // validate required props
-    if (!this.count) {
-      console.warn('x-counter: count prop is required')
-    }
-
-    // validate prop types
-    if (typeof this.count !== 'number') {
-      console.warn('x-counter: count must be a number')
-    }
-
-    // set defaults
-    this.type = this.type || 'default'
-    this.config = this.config || {}
-  }
-}
-</script>
 ```
 
 ## Lifecycle Methods
@@ -348,7 +316,7 @@ export default class {
 
 ## Communication Between Components
 
-### Parent to Child (Props)
+### Parent to Child (via Props)
 
 Pass data down through props:
 
@@ -377,7 +345,7 @@ export default class {
 </script>
 ```
 
-### Child to Parent (Events)
+### Child to Parent (via Events)
 
 Use custom events to communicate up:
 
@@ -405,13 +373,13 @@ export default class {
 </script>
 ```
 
-### Sibling Communication (Event Bus)
+### Sibling Communication (via Radio)
 
 For components that aren't directly related:
 
 ```javascript
-// utils/event-bus.js
-class EventBus {
+// radio.js
+class Radio {
   constructor() {
     this.events = {}
   }
@@ -433,17 +401,17 @@ class EventBus {
   }
 }
 
-export const eventBus = new EventBus()
+export const radio = new Radio
 ```
 
 ```html
 <!-- Component A -->
 <script>
-import { eventBus } from '../utils/event-bus.js'
+import { radio } from './radio.js'
 
 export default class {
   sendMessage() {
-    eventBus.emit('message', { text: 'Hello from Component A!' })
+    radio.emit('message', { text: 'Hello from Component A!' })
   }
 }
 </script>
@@ -452,7 +420,7 @@ export default class {
 ```html
 <!-- Component B -->
 <script>
-import { eventBus } from '../utils/event-bus.js'
+import { radio } from './radio.js'
 
 export default class {
   initialize() {
@@ -462,222 +430,13 @@ export default class {
     this.messageHandler = (data) => {
       this.messages.push(data)
     }
-    eventBus.on('message', this.messageHandler)
+    radio.on('message', this.messageHandler)
   }
 
   teardown() {
     // clean up listener
-    eventBus.off('message', this.messageHandler)
+    radio.off('message', this.messageHandler)
   }
 }
 </script>
 ```
-
-
-## Advanced Component Patterns
-
-### Higher-Order Components
-
-Create components that wrap other components:
-
-```html
-<!-- components/x-with-loading.html -->
-<template>
-  <div class="loading-wrapper">
-    <div x-show="loading" class="loading-spinner">
-      <div class="spinner"></div>
-      <p>Loading...</p>
-    </div>
-    
-    <div x-show="!loading">
-      <slot></slot>
-    </div>
-  </div>
-</template>
-
-<script>
-export default class {
-  static props = ['loading']
-  
-  initialize() {
-    this.loading = this.loading || false
-  }
-}
-</script>
-```
-
-Usage:
-```html
-<x-with-loading :loading="isLoadingData">
-  <x-data-table :data="tableData"></x-data-table>
-</x-with-loading>
-```
-
-### Render Props Pattern
-
-Components that provide data to their children:
-
-```html
-<!-- components/x-data-provider.html -->
-<template>
-  <div>
-    <slot :data="data" :loading="loading" :error="error" :refresh="refresh"></slot>
-  </div>
-</template>
-
-<script>
-export default class {
-  static props = ['url']
-  
-  initialize() {
-    this.data = null
-    this.loading = false
-    this.error = null
-    
-    this.loadData()
-  }
-  
-  async loadData() {
-    this.loading = true
-    this.error = null
-    
-    try {
-      const response = await fetch(this.url)
-      this.data = await response.json()
-    } catch (error) {
-      this.error = error.message
-    } finally {
-      this.loading = false
-    }
-  }
-  
-  refresh() {
-    this.loadData()
-  }
-}
-</script>
-```
-
-### Compound Components
-
-Components that work together as a unit:
-
-```html
-<!-- components/x-tabs.html -->
-<template>
-  <div class="tabs">
-    <div class="tab-list">
-      <slot name="tabs"></slot>
-    </div>
-    <div class="tab-panels">
-      <slot name="panels"></slot>
-    </div>
-  </div>
-</template>
-
-<script>
-export default class {
-  initialize() {
-    this.activeTab = 0
-  }
-  
-  setActiveTab(index) {
-    this.activeTab = index
-    this.$emit('tab-change', { index })
-  }
-}
-</script>
-```
-
-```html
-<!-- components/x-tab.html -->
-<template>
-  <button 
-    class="tab" 
-    :class="{ active: isActive }" 
-    @click="activate">
-    <slot></slot>
-  </button>
-</template>
-
-<script>
-export default class {
-  static props = ['index']
-  
-  get isActive() {
-    return this.parentComponent.activeTab === this.index
-  }
-  
-  activate() {
-    this.parentComponent.setActiveTab(this.index)
-  }
-}
-</script>
-```
-
-## Testing Components
-
-### Unit Testing
-
-Test component logic in isolation:
-
-```javascript
-// tests/components/x-counter.test.js
-import { describe, it, expect } from 'vitest'
-import { mount } from '@peak/test-utils'
-
-describe('x-counter', () => {
-  it('increments count when button is clicked', async () => {
-    const wrapper = mount('x-counter')
-    expect(wrapper.text()).toContain('0')
-    await wrapper.find('button[data-action="increment"]').click()
-    expect(wrapper.text()).toContain('1')
-  })
-
-  it('accepts initial count prop', () => {
-    const wrapper = mount('x-counter', {
-      props: { count: 5 }
-    })
-    expect(wrapper.text()).toContain('5')
-  })
-
-  it('emits change event when count changes', async () => {
-    const wrapper = mount('x-counter')
-    await wrapper.find('button[data-action="increment"]').click()
-    expect(wrapper.emitted('change')).toBeTruthy()
-    expect(wrapper.emitted('change')[0]).toEqual([{ count: 1 }])
-  })
-})
-```
-
-### Integration Testing
-
-Test component interactions:
-
-```javascript
-// tests/integration/todo-app.test.js
-import { describe, it, expect } from 'vitest'
-import { mount } from '@peak/test-utils'
-
-describe('Todo App Integration', () => {
-  it('adds and removes todos', async () => {
-    const wrapper = mount('x-todo-app')
-
-    // add a todo
-    const input = wrapper.find('input[placeholder="Add todo"]')
-    const addButton = wrapper.find('button[data-action="add"]')
-
-    await input.setValue('Test todo')
-    await addButton.click()
-
-    expect(wrapper.text()).toContain('Test todo')
-
-    // remove the todo
-    const removeButton = wrapper.find('button[data-action="remove"]')
-    await removeButton.click()
-
-    expect(wrapper.text()).not.toContain('Test todo')
-  })
-})
-```
-
