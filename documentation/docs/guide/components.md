@@ -7,7 +7,6 @@ Components are the building blocks of Peak.js applications. They encapsulate HTM
 A Peak.js component is a single HTML file with three optional sections:
 
 ```html
-<!-- components/x-example.html -->
 <template>
   <!-- HTML template goes here -->
 </template>
@@ -32,12 +31,12 @@ The `<template>` contains the component's HTML structure:
 <template>
   <div class="card">
     <header>
-      <h2 x-text="title"></h2>
-      <button @click="toggle" x-text="isExpanded ? 'Collapse' : 'Expand'"></button>
+      <h2 x-text="title" />
+      <button @click="toggle" x-text="isExpanded ? 'Collapse' : 'Expand'" />
     </header>
-    
+
     <main x-show="isExpanded" x-transition>
-      <slot></slot>
+      <slot />
     </main>
   </div>
 </template>
@@ -50,25 +49,24 @@ The `<script>` contains the component's JavaScript logic:
 ```html
 <script>
 export default class {
-  // Define accepted props
+  // declare accepted props
   static props = ['title', 'expanded']
-  
-  // Initialize component state
+
+  // initialize reactive component state
   initialize() {
     this.isExpanded = this.expanded || false
   }
-  
-  // Component methods
+
+  // component methods
   toggle() {
     this.isExpanded = !this.isExpanded
     this.$emit('toggle', { expanded: this.isExpanded })
   }
-  
-  // Lifecycle hooks
+
+  // lifecycle hooks
   mounted() {
     console.log('Component mounted')
   }
-  
   teardown() {
     console.log('Component destroyed')
   }
@@ -76,55 +74,38 @@ export default class {
 </script>
 ```
 
+
 ### Style Section
 
-The `<style>` contains component-scoped CSS:
+The `<style>` section contains CSS for the component.  The styles are scoped just to this component. This means that you are free to use simple, low-specificity selectors, without worrying that styles will leak into child components, or other part of the document.
 
 ```html
 <style>
-.card {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.card header {
-  padding: 16px;
-  background: #f8fafc;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card main {
-  padding: 16px;
-}
-
-/* Styles are automatically scoped to this component */
+/* styles will apply only to this component */
 button {
-  background: #3b82f6;
-  color: white;
+  background: #38f;
   border: none;
-  padding: 8px 16px;
   border-radius: 4px;
-  cursor: pointer;
+  color: white;
+  padding: 8px 16px;
+}
+header {
+  align-items: center;
+  display: flex;
+  background: #eef;
+  justify-content: space-between;
+  padding: 16px;
+}
+.card {
+  border: 1px solid #eee;
+  border-radius: 8px;
 }
 </style>
 ```
 
-## Component Registration
-
-Register components using the `component()` function.  Components are registered globally as custom elements, and so can be used directly anywhere in the document.
-
-```javascript
-import { component } from './peak.js'
-
-component('x-button', './components/x-button.html')
-component('x-modal', './components/x-modal.html')
-component('x-form', './components/x-form.html')
-```
-
 ## Props
+
+Props are how to provide data to components. Props are like regular HTML element attributes, except that they can reference complex data types like objects and arrays; and they are reactive.  That means if a parent component passes an array as a prop, when the array changes, the child will reflect the change immediately.
 
 ### Defining Props
 
@@ -133,27 +114,21 @@ Use the static `props` array to define accepted props:
 ```html
 <!-- components/x-user-card.html -->
 <template>
-  <div class="user-card">
+  <div class="user-card" :class="`size-${size}`">
     <img :src="user.avatar" :alt="user.name">
-    <h3 x-text="user.name"></h3>
     <p x-text="user.email"></p>
     <span :class="`status ${user.status}`" x-text="user.status"></span>
-    <button x-show="showActions" @click="editUser">Edit</button>
   </div>
 </template>
 
 <script>
 export default class {
-  static props = ['user', 'showActions']
+  static props = ['user', 'size']
 
   initialize() {
     // props are automatically available and reactive
     console.log('User:', this.user)
-    console.log('Show actions:', this.showActions)
-  }
-
-  editUser() {
-    this.$emit('edit', this.user)
+    console.log('Size:', this.size)
   }
 }
 </script>
@@ -161,7 +136,7 @@ export default class {
 
 ### Using Props
 
-Pass props using attributes:
+Pass props using as attributes.  When the attribute name starts with a `:` then the value is evaluated dynamically as an expression.
 
 ```html
 <!-- static props -->
@@ -314,129 +289,15 @@ export default class {
 </script>
 ```
 
-## Communication Between Components
+## Component Registration
 
-### Parent to Child (via Props)
-
-Pass data down through props:
-
-```html
-<!-- parent component -->
-<template>
-  <div>
-    <x-search-form @search="handleSearch"></x-search-form>
-    <x-results-list :results="searchResults" :loading="isLoading"></x-results-list>
-  </div>
-</template>
-
-<script>
-export default class {
-  initialize() {
-    this.searchResults = []
-    this.isLoading = false
-  }
-
-  async handleSearch(query) {
-    this.isLoading = true
-    this.searchResults = await this.performSearch(query)
-    this.isLoading = false
-  }
-}
-</script>
-```
-
-### Child to Parent (via Events)
-
-Use custom events to communicate up:
-
-```html
-<!-- child component -->
-<template>
-  <form @submit.prevent="handleSubmit">
-    <input x-model="query" placeholder="Search...">
-    <button type="submit">Search</button>
-  </form>
-</template>
-
-<script>
-export default class {
-  initialize() {
-    this.query = ''
-  }
-
-  handleSubmit() {
-    if (this.query.trim()) {
-      this.$emit('search', this.query.trim())
-    }
-  }
-}
-</script>
-```
-
-### Sibling Communication (via Radio)
-
-For components that aren't directly related:
+Register components using the `component()` function.  Components are registered globally as custom elements, and so can be used directly anywhere in the document.
 
 ```javascript
-// radio.js
-class Radio {
-  constructor() {
-    this.events = {}
-  }
-  on(event, callback) {
-    if (!this.events[event]) {
-      this.events[event] = []
-    }
-    this.events[event].push(callback)
-  }
-  emit(event, data) {
-    if (this.events[event]) {
-      this.events[event].forEach(callback => callback(data))
-    }
-  }
-  off(event, callback) {
-    if (this.events[event]) {
-      this.events[event] = this.events[event].filter(cb => cb !== callback)
-    }
-  }
-}
+import { component } from './peak.js'
 
-export const radio = new Radio
+component('x-button', './components/x-button.html')
+component('x-modal', './components/x-modal.html')
+component('x-form', './components/x-form.html')
 ```
 
-```html
-<!-- Component A -->
-<script>
-import { radio } from './radio.js'
-
-export default class {
-  sendMessage() {
-    radio.emit('message', { text: 'Hello from Component A!' })
-  }
-}
-</script>
-```
-
-```html
-<!-- Component B -->
-<script>
-import { radio } from './radio.js'
-
-export default class {
-  initialize() {
-    this.messages = []
-
-    // listen for messages
-    this.messageHandler = (data) => {
-      this.messages.push(data)
-    }
-    radio.on('message', this.messageHandler)
-  }
-
-  teardown() {
-    // clean up listener
-    radio.off('message', this.messageHandler)
-  }
-}
-</script>
-```
