@@ -4,7 +4,6 @@
     <div>
       X <span x-text="this.mouse.x"></span>
       Y <span x-text="this.mouse.y"></span>
-      <input type="text" x-model="inputText" placeholder="Type something...">
       <input type="checkbox" x-model="inputBool">
     </div>
     <form class="add-item" @submit="addItem">
@@ -21,11 +20,11 @@
         <template x-for="label in labels">
           <button
             :class="this.filter == this.label && 'selected'"
-            class="mx-4"
+            class="mx-2"
             @click="setFilter"
             :data-filter="label"
-            x-text="label"
-          ></button>
+            x-text="`${this.label}!`"
+          />
         </template>
       </span>
       <button class="flat" @click="clearCompleted">Clear completed</button>
@@ -97,5 +96,9 @@ footer a {
   text-decoration: none;
   color: #444;
   font-size: 14px;
+}
+.mx-2 {
+  margin-left: 2px;
+  margin-right: 2px;
 }
 </style>
