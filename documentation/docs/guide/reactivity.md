@@ -2,9 +2,9 @@
 
 When reactive data changes, the new state is automatically reflected in the UI.
 
-## How Reactivity Works
+## Component Properties
 
-Component properties are reactive by default. That means once you assign values to component properties, if those properties are referenced in the course of evaluating the template, then when the values change, the template will be rendered again to reflect the new values.
+Properties in components are reactive by default. That means once you assign a value to component property, if the property is referenced in the course of evaluating the template, then when the values changes, the template will be rendered again to reflect the new value.
 
 ```html
 <template>
