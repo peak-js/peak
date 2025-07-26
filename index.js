@@ -412,8 +412,8 @@ function render(template, ctx) {
           clone.content.children[0].removeAttribute('x-for')
         }
         const itemCtx = Object.create(ctx)
-        itemCtx[itemName] = item
-        itemCtx.index = index
+        Object.defineProperty(itemCtx, itemName, { value: item, enumerable: true })
+        Object.defineProperty(itemCtx, 'index', { value: index, enumerable: true })
         const rendered = render(clone.content, itemCtx)
         for (const c of rendered.children) {
           fragment.append(c)
