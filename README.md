@@ -146,22 +146,6 @@ Refer to an HTML element via `$refs`
 <button @click="$refs.searchInput.focus()">Search</button>
 ```
 
-## Props
-
-Specify props using a static `props` array:
-
-```html
-<template>
-  Greetings, <span x-text="name" />!
-</template>
-
-<script>
-export default class {
-  static props = ['name']
-}
-</script>
-```
-
 ## Component methods
 
 ### initialize()
@@ -244,6 +228,24 @@ Handle emitted events native and custom
 - **`initialize`** - component has been initialized but not yet mounted
 - **`mounted`** - component has been mounted in the document
 - **`teardown`** - component is no longer mounted
+
+## Props
+
+Specify props with `$prop` during the `initialize()` lifecycle method:
+
+```html
+<template>
+  Greetings, <span x-text="name" />!
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.name = this.$prop('name')
+  }
+}
+</script>
+```
 
 ## Component properties
 
