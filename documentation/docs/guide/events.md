@@ -106,10 +106,9 @@ Components can emit custom events using `$emit()`:
 
 <script>
 export default class {
-  static props = ['user']
 
   initialize() {
-    this.user = this.user || { name: '', email: '' }
+    this.user = this.$prop('user') || { name: '', email: '' }
   }
 
   submit() {

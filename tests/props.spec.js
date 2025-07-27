@@ -66,3 +66,10 @@ test('template literal with nested template', async ({ page }) => {
   await expect(page.locator('x-echo:has-text("template-literal")')).toBeVisible()
 })
 
+test('$prop defaulting pattern', async ({ page }) => {
+  await page.goto('/props.html')
+  await expect(page.locator('x-defaulting-test:has-text("Hello, Alice!")')).toBeVisible()
+  await expect(page.locator('x-defaulting-test:has-text("Hello, Bob!")')).toBeVisible()
+  await expect(page.locator('x-defaulting-test:has-text("Hello, Anonymous!")')).toBeVisible()
+})
+

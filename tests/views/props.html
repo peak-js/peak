@@ -35,6 +35,12 @@
   <hr>
   <div :contenteditable="isEditable">Content</div>
   <button @click="toggleEditable">Toggle editable</button>
+  <hr>
+  <x-defaulting-test name="Alice" />
+  <hr>
+  <x-defaulting-test :name="'Bob'" />
+  <hr>
+  <x-defaulting-test />
 </template>
 
 <script>

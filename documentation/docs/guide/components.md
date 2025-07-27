@@ -49,11 +49,11 @@ The `<script>` contains the component's JavaScript logic:
 ```html
 <script>
 export default class {
-  // declare accepted props
-  static props = ['title', 'expanded']
 
   // initialize reactive component state
   initialize() {
+    this.title = this.$prop('title')
+    this.expanded = this.$prop('expanded')
     this.isExpanded = this.expanded || false
   }
 
@@ -109,7 +109,7 @@ Props are how to provide data to components. Props are like regular HTML element
 
 ### Defining Props
 
-Use the static `props` array to define accepted props:
+Declare reactive props with `$prop()` in the the `initialize()` lifecycle method:
 
 ```html
 <!-- components/x-user-card.html -->
@@ -123,12 +123,9 @@ Use the static `props` array to define accepted props:
 
 <script>
 export default class {
-  static props = ['user', 'size']
-
   initialize() {
-    // props are automatically available and reactive
-    console.log('User:', this.user)
-    console.log('Size:', this.size)
+    this.name = this.$prop('name')
+    this.size = this.$prop('size')
   }
 }
 </script>

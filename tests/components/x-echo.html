@@ -8,7 +8,9 @@
 
 <script>
 export default class {
-  static props = ['message']
+  initialize() {
+    this.message = this.$prop('message')
+  }
 }
 </script>
 

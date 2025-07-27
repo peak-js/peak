@@ -22,12 +22,11 @@
 import { store } from '../store.js'
 
 export default class {
-  static props = ['item']
-
   get status() {
     return this.item.done ? 'completed' : 'active'
   }
   initialize() {
+    this.item = this.$prop('item')
     this.editing = false
     document.addEventListener('click', this.cancel)
   }

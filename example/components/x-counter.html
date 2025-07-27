@@ -5,10 +5,8 @@
 
 <script>
 export default class {
-  static get props() {
-    return ['item']
-  }
   initialize() {
+    this.item = this.$prop('item')
     this.data = { count: 0 }
   }
   increment() {

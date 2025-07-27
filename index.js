@@ -63,9 +63,10 @@ export const component = async (tagName, str) => {
       this._pk = rand()
       instances[this._pk] = this
       this._state = Object.create(null)
+      this._props = {}
       this._watchers = []
       this._template = template.cloneNode(true)
-      this.initialize?.()
+      this._promise = this.initialize?.()
       this.$emit('initialize')
       this._observe()
       this._initialized = true
@@ -78,6 +79,7 @@ export const component = async (tagName, str) => {
       }
     }
     async connectedCallback() {
+      await this._promise
       this._observe()
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
@@ -104,6 +106,24 @@ export const component = async (tagName, str) => {
     }
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
+    }
+    $prop(name) {
+      this._props[name] = true
+      
+      // Check for expression attribute first (e.g., `:name`)
+      const exprAttr = this.getAttribute(`:${name}`)
+      if (exprAttr !== null) {
+        return evalInContext(this, exprAttr)
+      }
+      
+      // Check for regular attribute
+      const attr = this.getAttribute(name)
+      if (attr !== null) {
+        return isBoolAttr(this, name) ? true : attr
+      }
+      
+      // Return undefined if no attribute found
+      return undefined
     }
     $on(eventType, handler) {
       this.addEventListener(eventType, handler)
@@ -204,7 +224,6 @@ export const component = async (tagName, str) => {
     .forEach(n => Object.defineProperty(_constructor.prototype, n,
       Object.getOwnPropertyDescriptor(_class.prototype, n)))
 
-  _constructor.props = _class.props
   customElements.define(tagName, _constructor)
 
   const scopedStyle = `
@@ -456,7 +475,7 @@ function render(template, ctx) {
 
       const name = a.name.replace(/^:/, '')
 
-      const unknown = isPeak(el) && !isGlobalAttribute(name) && !customElements.get(el.tagName.toLowerCase()).props?.includes(name)
+      const unknown = isPeak(el) && !isGlobalAttribute(name) && !el._props?.[name]
       unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
 
       if (a.name.match(/^[a-z]/) && !unknown) {

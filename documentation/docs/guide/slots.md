@@ -190,10 +190,8 @@ You can provide fallback content that appears when no slot content is provided:
 
 <script>
 export default class {
-  static props = ['variant']
-  
   initialize() {
-    this.variant = this.variant || 'primary'
+    this.variant = this.$prop('variant') || 'primary'
   }
 }
 </script>
@@ -283,7 +281,7 @@ Here's a complete example of an accordion component using slots:
       <slot name="header"></slot>
       <span class="icon" x-text="isOpen ? '−' : '+'"></span>
     </button>
-    
+
     <div class="accordion-content" x-show="isOpen" x-transition>
       <div class="accordion-body">
         <slot></slot>
@@ -294,12 +292,11 @@ Here's a complete example of an accordion component using slots:
 
 <script>
 export default class {
-  static props = ['open']
-  
+
   initialize() {
-    this.isOpen = this.open === 'true' || this.open === true
+    this.isOpen = this.$prop('open')
   }
-  
+
   toggle() {
     this.isOpen = !this.isOpen
     this.$emit('toggle', { open: this.isOpen })

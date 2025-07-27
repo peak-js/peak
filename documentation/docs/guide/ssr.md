@@ -102,7 +102,9 @@ app.listen(port, () => {
 
 <script>
 export default class {
-  static props = ['user']
+  initialize() {
+    this.user = this.$prop('user')
+  }
 }
 </script>
 
@@ -208,7 +210,6 @@ Fetch data during SSR for immediate rendering:
 
 <script>
 export default class {
-  static props = ['userId']
 
   async ssr() {
     this.loading = true
@@ -227,6 +228,8 @@ export default class {
   }
 
   initialize() {
+    this.userId = this.$prop('userId')
+
     // Client-side fallback if SSR data isn't available
     if (!this.user && !this.loading && !this.error) {
       this.loadUser()
