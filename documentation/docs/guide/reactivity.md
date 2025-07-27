@@ -61,7 +61,7 @@ In order to share reactive state across components, use `observable`:
 
 ```js
 // store.js
-import { observable } from 'peak-js/core'
+import { observable } from '@peak-js/core'
 const store = observable({ count: 0 })
 export default store
 ```
