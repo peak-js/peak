@@ -31,6 +31,14 @@ img[src="code-hero.svg"] {
   position: relative !important;
 }
 
+@media (max-width: 767px) {
+  img[src="code-hero.svg"] {
+    border-radius: 0;
+    padding: 24px 12px;
+    margin-top: 12px;
+  }
+}
+
 .image-container {
   width: auto !important;
   height: auto !important;
@@ -42,6 +50,13 @@ img[src="code-hero.svg"] {
 .main + .image {
   order: unset;
   margin: 0;
+}
+
+@media (max-width: 767px) {
+  .main + .image {
+    margin-left: -24px;
+    margin-right: -24px;
+  }
 }
 
 .VPHero {
