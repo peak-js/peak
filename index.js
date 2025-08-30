@@ -630,7 +630,7 @@ export function morph(l, r, attr) {
     }
     else {
       //console.log("REPLACE")
-      lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+      lc[ls++].replaceWith(rc[rs++])
     }
   }
 }

@@ -27,7 +27,7 @@ test('morph boolean attributes', async ({ page }) => {
   await expect($bool).not.toBeChecked()
   await page.click('text=Toggle checkbox')
   await expect($bool).toBeChecked()
-});
+})
 
 test('morph adding elements', async ({ page }) => {
   await page.goto('/morph.html')
@@ -36,7 +36,7 @@ test('morph adding elements', async ({ page }) => {
   await page.click('text=Add item')
   const $item = await page.locator('[id="$grow"] li:nth-child(3):has-text("Item 3")')
   await expect($item).toBeVisible()
-});
+})
 
 test('morph removing elements', async ({ page }) => {
   await page.goto('/morph.html')
@@ -45,7 +45,7 @@ test('morph removing elements', async ({ page }) => {
   await expect(page.locator('[id="$prune"] li')).toHaveCount(2)
   await expect(page.locator('[id="$prune"] li').nth(0)).toHaveText('Item 1')
   await expect(page.locator('[id="$prune"] li').nth(1)).toHaveText('Item 3')
-});
+})
 
 test('morph reordering with keys', async ({ page }) => {
   await page.goto('/morph.html')
@@ -55,4 +55,10 @@ test('morph reordering with keys', async ({ page }) => {
   await expect(page.locator('[id="$scramble"] li').nth(0)).toHaveText('Item 3')
   await expect(page.locator('[id="$scramble"] li').nth(1)).toHaveText('Item 1')
   await expect(page.locator('[id="$scramble"] li').nth(2)).toHaveText('Item 2')
-});
+})
+
+test('morph sibling flip flop events', async ({ page }) => {
+  await page.goto('/flop.html')
+  await page.click('text=DEBUG')
+  await expect(page.locator('text=CLICKED!')).toBeVisible()
+})

@@ -1,0 +1,21 @@
+<template>
+  <div x-if="!showDebug">
+    LOADING
+  </div>
+  <div x-if="showDebug">
+    <button @click="debug">DEBUG</button>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.showDebug = false
+    setTimeout(_ => this.showDebug = true, 1000)
+  }
+  debug(e) {
+    e.target.innerText = "CLICKED!"
+  }
+}
+</script>
+
