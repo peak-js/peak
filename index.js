@@ -5,6 +5,7 @@ const instances = {}
 const objs = new WeakMap
 const { getComponentHTML, getComponentClass } = window.__peak || {}
 const tags = {}
+const keyedComponents = {}
 
 export const route = {}
 
@@ -85,6 +86,12 @@ export const component = async (tagName, str) => {
         this.$watch(expr, fn, true)
       }
 
+      const key = this.getAttribute('key')
+      if (key) {
+        const keyId = `${this.tagName}:${key}`
+        keyedComponents[keyId] = this
+      }
+
       const ssrData = this.getAttribute('data-peak-ssr')
       if (ssrData) {
         this._hydrateFromSSR(ssrData)
@@ -99,17 +106,28 @@ export const component = async (tagName, str) => {
       this.$emit('mounted')
     }
     disconnectedCallback() {
-      delete(instances[this._pk])
-      this._unregister?.()
-      this.teardown?.()
-      this.$emit('teardown')
+      setTimeout(() => {
+        if (!this.isConnected) {
+          delete(instances[this._pk])
+          const keyAttr = this.getAttribute('key')
+          if (keyAttr) {
+            const keyId = `${this.tagName}:${keyAttr}`
+            if (!this.isConnected && keyedComponents[keyId] === this) {
+              delete keyedComponents[keyId]
+            }
+          }
+          this._unregister?.()
+          this.teardown?.()
+          this.$emit('teardown')
+        }
+      })
     }
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
     }
     $prop(name) {
       this._props[name] = true
-      
+
       // Check for expression attribute first (e.g., `:name`)
       const exprAttr = this.getAttribute(`:${name}`)
       if (exprAttr !== null) {
@@ -607,6 +625,10 @@ export function morph(l, r, attr) {
     if (ls == le) {
       //console.log("LOUT")
       let match = lc.find((c, i) => key(c) === key(rc[rs]) && i > ls)
+      if (!match && rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
+        const keyId = `${rc[rs].tagName}:${rc[rs].getAttribute('key')}`
+        match = keyedComponents[keyId]
+      }
       match ||= (match = rc[rs]) || render(rc[rs])
       l.insertBefore(match, lc[ls])
       rs++
@@ -622,6 +644,20 @@ export function morph(l, r, attr) {
     else if (content(lc[le - 1]) == content(rc[re - 1])) {
       //console.log("CMATCH REVERSE")
       le-- & re--
+    }
+    else if (rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
+      //console.log("KEYED LOOKUP")
+      const keyId = `${rc[rs].tagName}:${rc[rs].getAttribute('key')}`
+      const component = keyedComponents[keyId]
+      if (component) {
+        const ci = lc.indexOf(component)
+        if (ci >= 0) lc.splice(ci, 1) && le--
+        l.insertBefore(component, lc[ls])
+        morph(component, rc[rs], true)
+        rs++
+      } else {
+        lc[ls++].replaceWith(rc[rs++])
+      }
     }
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       //console.log("MORPH")
