@@ -1,0 +1,12 @@
+<template>
+  <td x-text="`col1 ${this.rand()}`" />
+  <td x-text="`col2 ${this.rand()}`" />
+</template>
+
+<script>
+export default class {
+  rand() {
+    return Math.random().toString(36).slice(2,5)
+  }
+}
+</script>

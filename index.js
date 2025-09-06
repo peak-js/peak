@@ -36,9 +36,9 @@ export const router = Object.assign(new EventTarget, {
   }
 })
 
-export const component = async (tagName, str) => {
+export const component = async (tagName, str, options) => {
 
-  if (str.match(/^s*\w+/)) str = '/' + str
+  if (str.match(/^\s*\w+/)) str = '/' + str
 
   const src = (str.match(/<template>/) ? str : window.__peak?.getComponentHTML?.(str))
     || await fetch(str).then(r => r.text())
@@ -46,7 +46,7 @@ export const component = async (tagName, str) => {
   const processedSrc = preprocessSelfClosingTags(src)
   const doc = parser.parseFromString(processedSrc, 'text/html')
   const _template = doc.querySelector('template')
-  const template = document.createElement('div')
+  const template = document.createElement('template')
   template.innerHTML = `${_template?.innerHTML || ''}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
@@ -58,7 +58,7 @@ export const component = async (tagName, str) => {
 
   const instance = new _class
 
-  class _constructor extends HTMLElement {
+  class _constructor extends document.createElement(options?.extends || 'main').constructor {
     constructor() {
       super()
       this._pk = rand()
@@ -242,7 +242,8 @@ export const component = async (tagName, str) => {
     .forEach(n => Object.defineProperty(_constructor.prototype, n,
       Object.getOwnPropertyDescriptor(_class.prototype, n)))
 
-  customElements.define(tagName, _constructor)
+  const _options = options?.extends ? { extends: options.extends } : undefined
+  customElements.define(tagName, _constructor, _options)
 
   const scopedStyle = `
     <style data-peak-component="${tagName}">
@@ -364,7 +365,7 @@ async function loadModule(source='', url) {
 }
 
 function render(template, ctx) {
-  const root = template.cloneNode(true)
+  const root = template.content?.cloneNode(true) || template.cloneNode(true)
   function _render(el, state) {
     if (el.hasAttribute?.('x-text') && !el.hasAttribute?.('x-for')) {
       el.textContent = evalInContext(ctx, el.getAttribute('x-text'))

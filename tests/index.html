@@ -8,6 +8,8 @@ import { component, router } from './peak.js'
 
 component('x-echo', '/components/x-echo.html')
 component('x-defaulting-test', '/components/x-defaulting-test.html')
+component('x-table-row', '/components/x-table-row.html', { extends: 'tr' })
+component('x-table-cell', '/components/x-table-cell.html', { extends: 'td' })
 
 router.route('/x-text.html', '/views/x-text.html')
 router.route('/x-html.html', '/views/x-html.html')
@@ -22,6 +24,7 @@ router.route('/props.html', '/views/props.html')
 router.route('/slots.html', '/views/slots.html')
 router.route('/form.html', '/views/form.html')
 router.route('/flop.html', '/views/flop.html')
+router.route('/table.html', '/views/table.html')
 
 router.on('navigation', route => console.log('navigation', route))
 router.on('notFound', route => console.log('not-found', route))
