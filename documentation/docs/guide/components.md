@@ -298,3 +298,35 @@ component('x-modal', './components/x-modal.html')
 component('x-form', './components/x-form.html')
 ```
 
+## Extending Native Elements
+
+Components can extend native HTML elements, allowing you to create specialized versions of standard elements like table rows, list items, or form controls. This is particularly useful for creating components that need to fit into specific HTML structures or inherit native element behavior.
+
+To create a component that extends a native element, pass an options object as the third parameter to the `component()` function with an `extends` property:
+
+```javascript
+component('x-table-row', './components/x-table-row.html', { extends: 'tr' })
+```
+
+When using these components, use the `is` attribute on the native element you're extending:
+
+```html
+<table>
+  <tr is="x-table-row"></tr>
+  <tr is="x-table-row"></tr>
+  <tr is="x-table-row"></tr>
+</table>
+```
+
+And here's an example table row component:
+
+```html
+<!-- components/x-table-row.html -->
+<template>
+  <td>Column 1</td>
+  <td>Column 2</td>
+</template>
+```
+
+This approach allows you to create reusable table row components that maintain all the semantics and behavior of native `<tr>` elements while adding your custom functionality.
+
