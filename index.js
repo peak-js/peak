@@ -792,7 +792,7 @@ function hsh(str) {
 }
 
 function isPeak(e) {
-  return tags[e.tagName?.toLowerCase()]
+  return tags[e.is || e.tagName?.toLowerCase()]
 }
 
 function remove(arr, fn) {
