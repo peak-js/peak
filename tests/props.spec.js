@@ -73,3 +73,45 @@ test('$prop defaulting pattern', async ({ page }) => {
   await expect(page.locator('x-defaulting-test:has-text("Hello, Anonymous!")')).toBeVisible()
 })
 
+test('should not warn when passing valid props to child components', async ({ page }) => {
+  // Capture console warnings
+  const warnings = [];
+  page.on('console', msg => {
+    if (msg.type() === 'warning') {
+      warnings.push(msg.text());
+    }
+  });
+
+  await page.goto('/props.html');
+
+  // Check that the valid props are rendered correctly
+  await expect(page.locator('x-echo:has-text("HELLO")')).toBeVisible();
+  await expect(page.locator('x-echo:has-text("static")')).toBeVisible();
+  await expect(page.locator('x-echo:has-text("red")')).toBeVisible();
+  await expect(page.locator('x-echo:has-text("large")')).toBeVisible();
+
+  // Check that no warnings were logged about valid props
+  const propWarnings = warnings.filter(w => w.includes('Unknown prop') && (w.includes('message') || w.includes('style') || w.includes('class')));
+  expect(propWarnings).toHaveLength(0);
+});
+
+test('should still warn when passing invalid props to child components', async ({ page }) => {
+  // Capture console warnings
+  const warnings = [];
+  page.on('console', msg => {
+    if (msg.type() === 'warning') {
+      warnings.push(msg.text());
+    }
+  });
+
+  await page.goto('/props.html');
+
+  // Check that the element with bogus prop still renders
+  await expect(page.locator('x-echo:has-text("bogus")')).toBeVisible();
+
+  // Check that we get a warning about the invalid prop
+  const bogusWarnings = warnings.filter(w => w.includes('Unknown prop') && w.includes('bogus'));
+  expect(bogusWarnings).toHaveLength(1);
+  expect(bogusWarnings[0]).toContain('Unknown prop \'bogus\' passed to <x-echo>');
+});
+

@@ -65,6 +65,7 @@ export const component = async (tagName, str, options) => {
       instances[this._pk] = this
       this._state = Object.create(null)
       this._props = {}
+      this._pending = {}
       this._watchers = []
       this._template = template.cloneNode(true)
       this._promise = this.initialize?.()
@@ -84,6 +85,12 @@ export const component = async (tagName, str, options) => {
       this._observe()
       for (const [expr, fn] of this._watchers) {
         this.$watch(expr, fn, true)
+      }
+
+      for (const attr of this.attributes) {
+        const name = attr.name.replace(/^:/, '')
+        if (isGlobalAttribute(name) || this._props[name]) continue
+        console.warn(`[peak] Unknown prop '${name}' passed to <${this.tagName.toLowerCase()}>`)
       }
 
       const key = this.getAttribute('key')
@@ -133,15 +140,19 @@ export const component = async (tagName, str, options) => {
       if (exprAttr !== null) {
         return evalInContext(this, exprAttr)
       }
-      
+
       // Check for regular attribute
       const attr = this.getAttribute(name)
       if (attr !== null) {
         return isBoolAttr(this, name) ? true : attr
       }
-      
-      // Return undefined if no attribute found
-      return undefined
+
+      if (this._pending && this._pending.hasOwnProperty(name)) {
+        const value = this._pending[name]
+        delete this._pending[name]
+        this[name] = value
+        return value
+      }
     }
     $on(eventType, handler) {
       this.addEventListener(eventType, handler)
@@ -494,11 +505,13 @@ function render(template, ctx) {
 
       const name = a.name.replace(/^:/, '')
 
-      const unknown = isPeak(el) && !isGlobalAttribute(name) && !el._props?.[name]
-      unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
-
-      if (a.name.match(/^[a-z]/) && !unknown) {
-        el[a.name] = isBoolAttr(el, name) ? true : a.value
+      if (a.name.match(/^[a-z]/)) {
+        if (isPeak(el)) {
+          el._pending ||= {}
+          el._pending[name] = isBoolAttr(el, name) ? true : a.value
+        } else {
+          el[a.name] = isBoolAttr(el, name) ? true : a.value
+        }
       }
       else if (a.name.startsWith(':')) {
         const expr = name == 'class' ? `_pk_clsx(${a.value})` : a.value
@@ -514,7 +527,7 @@ function render(template, ctx) {
           const objId = getObjId(value)
           el.setAttribute(name, `$${objId}`)
         }
-        !unknown && (el[name] = value)
+        el[name] = value
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)

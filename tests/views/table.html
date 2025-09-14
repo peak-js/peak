@@ -1,5 +1,6 @@
 <template>
   <h1>Table</h1>
+  <button @click="insert">Add row</button>
   <table>
     <tr is="x-table-row"></tr>
     <tr is="x-table-row"></tr>
@@ -8,5 +9,24 @@
       <td is="x-table-cell"></td>
       <td>regular cell</td>
     </tr>
+    <tr is="x-table-row-prop" :row="row" x-for="row in rows" :bogus="row" xofjw="123"></tr>
   </table>
 </template>
+
+<script>
+export default class {
+  initialize() {
+    this.rows = [
+      { name: 'abc', value: 123 },
+      { name: 'def', value: 456 },
+    ]
+  }
+  insert() {
+    this.rows.push({ name: rand(), value: rand() })
+  }
+}
+
+function rand() {
+  return Math.random().toString(36).slice(2)
+}
+</script>

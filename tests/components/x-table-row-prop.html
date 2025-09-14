@@ -1,0 +1,17 @@
+<template>
+  <td x-text="`prop name ${this.row.name}`" />
+  <td x-text="`prop value ${this.row.value}`" />
+</template>
+
+<script>
+export default class {
+  initialize() {
+    console.log("PROP")
+    this.row = this.$prop('row')
+  }
+  mounted() {
+    console.log("MOUNTED")
+  }
+}
+</script>
+
