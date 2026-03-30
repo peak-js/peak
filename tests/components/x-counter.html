@@ -1,0 +1,17 @@
+<template>
+  <div>Counter: <span x-text="count"></span>
+    <button @click="increment">+</button>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.count = 0
+  }
+
+  increment() {
+    this.count++
+  }
+}
+</script>

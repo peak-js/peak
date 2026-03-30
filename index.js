@@ -5,6 +5,7 @@ const instances = {}
 const objs = new WeakMap
 const { getComponentHTML, getComponentClass } = window.__peak || {}
 const tags = {}
+const keyedComponents = {}
 
 export const route = {}
 
@@ -35,9 +36,9 @@ export const router = Object.assign(new EventTarget, {
   }
 })
 
-export const component = async (tagName, str) => {
+export const component = async (tagName, str, options) => {
 
-  if (str.match(/^s*\w+/)) str = '/' + str
+  if (str.match(/^\s*\w+/)) str = '/' + str
 
   const src = (str.match(/<template>/) ? str : window.__peak?.getComponentHTML?.(str))
     || await fetch(str).then(r => r.text())
@@ -45,7 +46,7 @@ export const component = async (tagName, str) => {
   const processedSrc = preprocessSelfClosingTags(src)
   const doc = parser.parseFromString(processedSrc, 'text/html')
   const _template = doc.querySelector('template')
-  const template = document.createElement('div')
+  const template = document.createElement('template')
   template.innerHTML = `${_template?.innerHTML || ''}`
   const style = doc.querySelector('style')?.textContent
   const script = doc.querySelector('script')?.textContent
@@ -57,13 +58,14 @@ export const component = async (tagName, str) => {
 
   const instance = new _class
 
-  class _constructor extends HTMLElement {
+  class _constructor extends document.createElement(options?.extends || 'main').constructor {
     constructor() {
       super()
       this._pk = rand()
       instances[this._pk] = this
       this._state = Object.create(null)
       this._props = {}
+      this._pending = {}
       this._watchers = []
       this._template = template.cloneNode(true)
       this._promise = this.initialize?.()
@@ -85,6 +87,18 @@ export const component = async (tagName, str) => {
         this.$watch(expr, fn, true)
       }
 
+      for (const attr of this.attributes) {
+        const name = attr.name.replace(/^:/, '')
+        if (isGlobalAttribute(name) || this._props[name]) continue
+        console.warn(`[peak] Unknown prop '${name}' passed to <${this.tagName.toLowerCase()}>`)
+      }
+
+      const key = this.getAttribute('key')
+      if (key) {
+        const keyId = `${this.tagName}:${key}`
+        keyedComponents[keyId] = this
+      }
+
       const ssrData = this.getAttribute('data-peak-ssr')
       if (ssrData) {
         this._hydrateFromSSR(ssrData)
@@ -99,31 +113,46 @@ export const component = async (tagName, str) => {
       this.$emit('mounted')
     }
     disconnectedCallback() {
-      delete(instances[this._pk])
-      this._unregister?.()
-      this.teardown?.()
-      this.$emit('teardown')
+      setTimeout(() => {
+        if (!this.isConnected) {
+          delete(instances[this._pk])
+          const keyAttr = this.getAttribute('key')
+          if (keyAttr) {
+            const keyId = `${this.tagName}:${keyAttr}`
+            if (!this.isConnected && keyedComponents[keyId] === this) {
+              delete keyedComponents[keyId]
+            }
+          }
+          this._unregister?.()
+          this.teardown?.()
+          this.$emit('teardown')
+        }
+      })
     }
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
     }
     $prop(name) {
       this._props[name] = true
-      
+
       // Check for expression attribute first (e.g., `:name`)
       const exprAttr = this.getAttribute(`:${name}`)
       if (exprAttr !== null) {
         return evalInContext(this, exprAttr)
       }
-      
+
       // Check for regular attribute
       const attr = this.getAttribute(name)
       if (attr !== null) {
         return isBoolAttr(this, name) ? true : attr
       }
-      
-      // Return undefined if no attribute found
-      return undefined
+
+      if (this._pending && this._pending.hasOwnProperty(name)) {
+        const value = this._pending[name]
+        delete this._pending[name]
+        this[name] = value
+        return value
+      }
     }
     $on(eventType, handler) {
       this.addEventListener(eventType, handler)
@@ -224,7 +253,8 @@ export const component = async (tagName, str) => {
     .forEach(n => Object.defineProperty(_constructor.prototype, n,
       Object.getOwnPropertyDescriptor(_class.prototype, n)))
 
-  customElements.define(tagName, _constructor)
+  const _options = options?.extends ? { extends: options.extends } : undefined
+  customElements.define(tagName, _constructor, _options)
 
   const scopedStyle = `
     <style data-peak-component="${tagName}">
@@ -346,7 +376,7 @@ async function loadModule(source='', url) {
 }
 
 function render(template, ctx, locals) {
-  const root = template.cloneNode(true)
+  const root = template.content?.cloneNode(true) || template.cloneNode(true)
   function _render(el, state) {
     if (el.hasAttribute?.('x-text') && !el.hasAttribute?.('x-for')) {
       el.textContent = evalInContext(ctx, el.getAttribute('x-text'), undefined, locals)
@@ -473,11 +503,13 @@ function render(template, ctx, locals) {
 
       const name = a.name.replace(/^:/, '')
 
-      const unknown = isPeak(el) && !isGlobalAttribute(name) && !el._props?.[name]
-      unknown && console.warn(`[peak] Unknown prop '${name}' passed to <${el.tagName.toLowerCase()}>`)
-
-      if (a.name.match(/^[a-z]/) && !unknown) {
-        el[a.name] = isBoolAttr(el, name) ? true : a.value
+      if (a.name.match(/^[a-z]/)) {
+        if (isPeak(el)) {
+          el._pending ||= {}
+          el._pending[name] = isBoolAttr(el, name) ? true : a.value
+        } else {
+          el[a.name] = isBoolAttr(el, name) ? true : a.value
+        }
       }
       else if (a.name.startsWith(':')) {
         const expr = name == 'class' ? `_pk_clsx(${a.value})` : a.value
@@ -493,7 +525,7 @@ function render(template, ctx, locals) {
           const objId = getObjId(value)
           el.setAttribute(name, `$${objId}`)
         }
-        !unknown && (el[name] = value)
+        el[name] = value
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
@@ -610,6 +642,10 @@ export function morph(l, r, attr) {
     if (ls == le) {
       //console.log("LOUT")
       let match = lc.find((c, i) => key(c) === key(rc[rs]) && i > ls)
+      if (!match && rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
+        const keyId = `${rc[rs].tagName}:${rc[rs].getAttribute('key')}`
+        match = keyedComponents[keyId]
+      }
       match ||= (match = rc[rs]) || render(rc[rs])
       l.insertBefore(match, lc[ls])
       rs++
@@ -626,6 +662,20 @@ export function morph(l, r, attr) {
       //console.log("CMATCH REVERSE")
       le-- & re--
     }
+    else if (rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
+      //console.log("KEYED LOOKUP")
+      const keyId = `${rc[rs].tagName}:${rc[rs].getAttribute('key')}`
+      const component = keyedComponents[keyId]
+      if (component) {
+        const ci = lc.indexOf(component)
+        if (ci >= 0) lc.splice(ci, 1) && le--
+        l.insertBefore(component, lc[ls])
+        morph(component, rc[rs], true)
+        rs++
+      } else {
+        lc[ls++].replaceWith(rc[rs++])
+      }
+    }
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       //console.log("MORPH")
       render(rc[rs])
@@ -633,7 +683,7 @@ export function morph(l, r, attr) {
     }
     else {
       //console.log("REPLACE")
-      lc[ls++].replaceWith(rc[rs++].cloneNode(true))
+      lc[ls++].replaceWith(rc[rs++])
     }
   }
 }
@@ -762,7 +812,7 @@ function hsh(str) {
 }
 
 function isPeak(e) {
-  return tags[e.tagName?.toLowerCase()]
+  return tags[e.is || e.tagName?.toLowerCase()]
 }
 
 function remove(arr, fn) {

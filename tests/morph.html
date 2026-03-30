@@ -52,8 +52,52 @@
   </ul>
   <button onclick="scramble()">Scramble order</button>
 
+  <hr>
+
+  <h2>Cross-hierarchy keyed component movement</h2>
+  <div id="$hierarchy">
+    <div class="container-a">
+      <p>Container A:</p>
+      <x-counter key="toolbar"></x-counter>
+    </div>
+    <div class="container-b">
+      <p>Container B:</p>
+    </div>
+  </div>
+  <button onclick="moveToolbar()">Move toolbar</button>
+
+  <hr>
+
+  <h2>Deeply nested keyed component lookup</h2>
+  <div id="$nested">
+    <div class="level1">
+      <div class="level2">
+        <div class="level3">
+          <x-counter key="deep-widget"></x-counter>
+        </div>
+      </div>
+    </div>
+    <div class="different-branch">
+      <p>Different branch:</p>
+    </div>
+  </div>
+  <button onclick="moveDeepWidget()">Move deep widget</button>
+
+  <hr>
+
+  <h2>Sibling keyed component movement</h2>
+  <div id="$siblings">
+    <x-counter key="sibling-widget"></x-counter>
+    <div class="spacer">Spacer content</div>
+    <div class="target">Target location</div>
+  </div>
+  <button onclick="moveSibling()">Move to end</button>
+
   <script type="module">
-    import { morph } from './peak.js'
+    import { morph, component } from './peak.js'
+
+    // Load counter component for testing
+    await component('x-counter', './components/x-counter.html')
 
     window.changeText = function() {
       const clone = window.$text.cloneNode(true)
@@ -101,6 +145,41 @@
       clone.appendChild(items[0])
       clone.appendChild(items[1])
       morph(window.$scramble, clone)
+    }
+
+    window.moveToolbar = function() {
+      const clone = window.$hierarchy.cloneNode(true)
+      const toolbar = clone.querySelector('[key="toolbar"]')
+      const containerB = clone.querySelector('.container-b')
+
+      // Move toolbar from container A to container B
+      toolbar.remove()
+      containerB.appendChild(toolbar)
+
+      morph(window.$hierarchy, clone)
+    }
+
+    window.moveDeepWidget = function() {
+      const clone = window.$nested.cloneNode(true)
+      const widget = clone.querySelector('[key="deep-widget"]')
+      const differentBranch = clone.querySelector('.different-branch')
+
+      // Move widget from deep nesting to different branch
+      widget.remove()
+      differentBranch.appendChild(widget)
+
+      morph(window.$nested, clone)
+    }
+
+    window.moveSibling = function() {
+      const clone = window.$siblings.cloneNode(true)
+      const widget = clone.querySelector('[key="sibling-widget"]')
+
+      // Move widget from first position to last position (still siblings)
+      widget.remove()
+      clone.appendChild(widget)
+
+      morph(window.$siblings, clone)
     }
   </script>
 </body>

@@ -1,6 +1,6 @@
 {
   "name": "@peak-js/core",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "description": "Easy reactive web framework",
   "type": "module",
   "files": [
@@ -15,7 +15,7 @@
     "test": "npx playwright test --config tests/playwright.config.js"
   },
   "devDependencies": {
-    "playwright": "^1.0.0"
+    "@playwright/test": "1.55.0"
   },
   "repository": {
     "type": "git",
