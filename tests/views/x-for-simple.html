@@ -1,0 +1,20 @@
+<template>
+  <div>
+    <h1>Simple X-For Test</h1>
+    <div data-testid="status">loaded</div>
+    
+    <template x-for="item in [1, 2, 3]">
+      <button @click="clicked = item" x-text="`Button ${item}`"></button>
+    </template>
+    
+    <div data-testid="clicked" x-text="clicked"></div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.clicked = 'none'
+  }
+}
+</script>

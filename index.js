@@ -345,15 +345,15 @@ async function loadModule(source='', url) {
   return factory(...injectedValues);
 }
 
-function render(template, ctx) {
+function render(template, ctx, locals) {
   const root = template.cloneNode(true)
   function _render(el, state) {
     if (el.hasAttribute?.('x-text') && !el.hasAttribute?.('x-for')) {
-      el.textContent = evalInContext(ctx, el.getAttribute('x-text'))
+      el.textContent = evalInContext(ctx, el.getAttribute('x-text'), undefined, locals)
       el.removeAttribute('x-text')
     }
     if (el.hasAttribute?.('x-html') && !el.hasAttribute?.('x-for')) {
-      el.innerHTML = evalInContext(ctx, el.getAttribute('x-html'))
+      el.innerHTML = evalInContext(ctx, el.getAttribute('x-html'), undefined, locals)
       el.removeAttribute('x-html')
     }
     if (state.pass !== undefined) {
@@ -362,23 +362,23 @@ function render(template, ctx) {
       }
     }
     if (el.hasAttribute?.('x-if')) {
-      const shouldRender = evalInContext(ctx, el.getAttribute('x-if'))
+      const shouldRender = evalInContext(ctx, el.getAttribute('x-if'), undefined, locals)
       state.pass = Boolean(shouldRender)
       el.removeAttribute('x-if')
       if (!shouldRender) return
       if (el.tagName == 'TEMPLATE') {
-        el.replaceWith(render(el.content, ctx))
+        el.replaceWith(render(el.content, ctx, locals))
       }
     }
     if (el.hasAttribute?.('x-else-if')) {
       if (state.pass === undefined) console.warn('invalid x-else-if', el)
       if (state.pass) return
-      const shouldRender = evalInContext(ctx, el.getAttribute('x-else-if'))
+      const shouldRender = evalInContext(ctx, el.getAttribute('x-else-if'), undefined, locals)
       state.pass = Boolean(shouldRender)
       el.removeAttribute('x-else-if')
       if (!shouldRender) return
       if (el.tagName == 'TEMPLATE') {
-        el.replaceWith(render(el.content, ctx))
+        el.replaceWith(render(el.content, ctx, locals))
       }
     }
     if (el.hasAttribute?.('x-else')) {
@@ -387,7 +387,7 @@ function render(template, ctx) {
       }
       if (state.pass) return
       if (el.tagName == 'TEMPLATE') {
-        el.replaceWith(render(el.content, ctx))
+        el.replaceWith(render(el.content, ctx, locals))
       }
     }
     if (el.tagName === 'SLOT') {
@@ -418,7 +418,7 @@ function render(template, ctx) {
         return
       }
       const [, itemName, itemsExpr] = match
-      const items = evalInContext(ctx, itemsExpr)
+      const items = evalInContext(ctx, itemsExpr, undefined, locals)
 
       const fragment = document.createDocumentFragment()
 
@@ -430,10 +430,8 @@ function render(template, ctx) {
           clone.innerHTML = el.outerHTML
           clone.content.children[0].removeAttribute('x-for')
         }
-        const itemCtx = Object.create(ctx)
-        Object.defineProperty(itemCtx, itemName, { value: item, enumerable: true })
-        Object.defineProperty(itemCtx, 'index', { value: index, enumerable: true })
-        const rendered = render(clone.content, itemCtx)
+        const itemLocals = Object.assign({}, locals, { [itemName]: item, index })
+        const rendered = render(clone.content, ctx, itemLocals)
         for (const c of rendered.children) {
           fragment.append(c)
         }
@@ -446,7 +444,7 @@ function render(template, ctx) {
       ctx._refs[el.getAttribute('x-ref')] = el
     }
     if (el.hasAttribute?.('x-show')) {
-      const shouldShow = evalInContext(ctx, el.getAttribute('x-show'))
+      const shouldShow = evalInContext(ctx, el.getAttribute('x-show'), undefined, locals)
       el.style.display = shouldShow ? null : 'none'
     }
     if (el.hasAttribute?.('x-model')) {
@@ -483,7 +481,7 @@ function render(template, ctx) {
       }
       else if (a.name.startsWith(':')) {
         const expr = name == 'class' ? `_pk_clsx(${a.value})` : a.value
-        let value = evalInContext(ctx, expr)
+        let value = evalInContext(ctx, expr, undefined, locals)
         if (typeof value == 'boolean' && isBoolAttr(el, name) && !value) {
           el.removeAttribute(name)
         } else if (typeof value != 'object') {
@@ -499,7 +497,7 @@ function render(template, ctx) {
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
-        listen(eventName, el, ctx)
+        listen(eventName, el, ctx, locals)
       }
     }
     const moribund = []
@@ -513,8 +511,8 @@ function render(template, ctx) {
   return _render(root, {})
 }
 
-function listen(eventType, el, ctx) {
-  contexts.set(el, ctx)
+function listen(eventType, el, ctx, locals) {
+  contexts.set(el, { ctx, locals })
   if (handlers[eventType]) return
   const handler = (e) => handleEvent(e, eventType)
   handlers[eventType] = true
@@ -552,14 +550,19 @@ function handleEvent(event, eventType) {
   let target = event.target
 
   while (target && target !== document) {
-    const ctx = contexts.get(target)
+    const entry = contexts.get(target)
     let value = target.getAttribute(`@${eventType}`)
 
-    if (ctx && value) {
+    if (value) {
+      let ctx = target
+      while (!isPeak(ctx) && ctx !== document) {
+        ctx = ctx.parentElement
+      }
       ctx.$event = event
+      const locals = entry?.locals
       try {
         if (value in ctx) value += '(event)'
-        evalInContext(ctx, value, event)
+        evalInContext(ctx, value, event, locals)
         if (event.defaultPrevented || event.cancelBubble) break
       } catch (err) {
         console.error(err)
@@ -635,7 +638,9 @@ export function morph(l, r, attr) {
   }
 }
 
-function evalInContext(element, code, ...args) {
+function evalInContext(element, code, eventArg, locals) {
+  const localNames = locals ? Object.keys(locals) : []
+  const localValues = locals ? Object.values(locals) : []
 
   if (!code.match(/[\`\"\'\{\$]/)) { //`
     code = code.replace(
@@ -643,13 +648,15 @@ function evalInContext(element, code, ...args) {
       (match, identifier) => {
         const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'Boolean', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event', '_pk_clsx' ]
         if (keywords.includes(identifier)) return match
+        if (localNames.includes(identifier)) return match
         return `this.${identifier}`
       }
     )
   }
 
   try {
-    return new Function('event', '_pk_clsx', `return ${code}`).call(element, args[0], clsx);
+    return new Function('event', '_pk_clsx', ...localNames, `return ${code}`)
+      .call(element, eventArg, clsx, ...localValues)
   } catch(e) {
     try { var tagName = element.tagName } catch(e) {}
     console.warn(element, tagName, code, e)

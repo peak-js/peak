@@ -1,0 +1,31 @@
+<template>
+  <div>
+    <h1>X-For Events Test</h1>
+    <div data-testid="click-count" x-text="clickCount"></div>
+    <div data-testid="last-clicked" x-text="lastClicked"></div>
+    <div data-testid="item-value" x-text="itemValue"></div>
+    
+    <template x-for="item in items">
+      <button @click="handleItemClick" x-text="`Item ${item}`"></button>
+    </template>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.items = [1, 2, 3]
+    this.clickCount = 0
+    this.lastClicked = 'none'
+    this.itemValue = 'none'
+  }
+  
+  handleItemClick() {
+    this.clickCount++
+    // this should have access to 'item' from the x-for context
+    this.lastClicked = this.$event.target.textContent
+    // try to access the item variable directly
+    this.itemValue = typeof item !== 'undefined' ? item : 'undefined'
+  }
+}
+</script>
