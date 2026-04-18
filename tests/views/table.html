@@ -1,6 +1,6 @@
 <template>
   <h1>Table</h1>
-  <button @click="insert">Add row</button>
+  <button @click="this.insert()">Add row</button>
   <table>
     <tr is="x-table-row"></tr>
     <tr is="x-table-row"></tr>
@@ -9,7 +9,7 @@
       <td is="x-table-cell"></td>
       <td>regular cell</td>
     </tr>
-    <tr is="x-table-row-prop" :row="row" x-for="row in rows" :bogus="row" xofjw="123"></tr>
+    <tr is="x-table-row-prop" :row="row" x-for="row in this.rows" :bogus="row" xofjw="123"></tr>
   </table>
 </template>
 

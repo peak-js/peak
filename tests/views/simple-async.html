@@ -1,8 +1,8 @@
 <template>
   <div>
     <h1>Simple Async Test</h1>
-    <div data-testid="items-count" x-text="itemsCount"></div>
-    <div data-testid="message" x-text="message"></div>
+    <div data-testid="items-count" x-text="this.itemsCount"></div>
+    <div data-testid="message" x-text="this.message"></div>
     <div data-testid="loading" x-text="this.loading ? 'Loading...' : 'Done'"></div>
   </div>
 </template>

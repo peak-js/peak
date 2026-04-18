@@ -157,15 +157,20 @@ export const component = async (tagName, str, options) => {
     $on(eventType, handler) {
       this.addEventListener(eventType, handler)
     }
-    $watch(expr, fn, deferred) {
+    $watch(getter, fn, deferred) {
+      if (typeof getter === 'string') {
+        // legacy string form -- wrap it so the rest of the logic is uniform
+        const prop = getter
+        getter = () => evalInContext(this, prop.match(/^[\w.]+$/) ? `this.${prop}` : prop)
+      }
       if (!this._initialized || !deferred) {
-        this._watchers.push([expr, fn])
+        this._watchers.push([getter, fn])
       }
       if (this._initialized) {
         const stashedContextId = _contextId
         _contextId = rand()
         instances[_contextId] = { $defer() { fn() } }
-        evalInContext(this, expr)
+        getter.call(this)
         _contextId = stashedContextId
       }
     }
@@ -478,18 +483,20 @@ function render(template, ctx, locals) {
       el.style.display = shouldShow ? null : 'none'
     }
     if (el.hasAttribute?.('x-model')) {
-      const prop = el.getAttribute('x-model')
+      const expr = el.getAttribute('x-model')
+      const prop = expr.replace(/^this\./, '')
       const fn = () => {
+        const val = evalInContext(ctx, expr, undefined, locals)
         if (el.type == 'checkbox') {
-          el.checked = ctx[prop]
+          el.checked = val
         } else if (el.type == 'radio') {
-          el.checked = el.value === ctx[prop]
+          el.checked = el.value === val
         } else {
-          el.value = ctx[prop]
+          el.value = val
         }
       }
       fn._model = true
-      ctx.$watch(prop, fn)
+      ctx.$watch(_ => evalInContext(ctx, expr, undefined, locals), fn)
       fn() // Set initial value
       model()
     }
@@ -559,17 +566,18 @@ function model() {
     let el = e.target
     while (el && el !== document) {
       if (isPeak(el)) {
-        const name = e.target.getAttribute('x-model')
-        if (name in el) {
+        const expr = e.target.getAttribute('x-model')
+        const prop = expr.replace(/^this\./, '')
+        if (prop in el) {
           if (e.target.type == 'checkbox') {
-            el[name] = e.target.checked
+            el[prop] = e.target.checked
           } else if (e.target.type == 'radio') {
-            el[name] = e.target.value
+            el[prop] = e.target.value
           } else {
-            el[name] = e.target.value
+            el[prop] = e.target.value
           }
         } else {
-          console.warn(`[peak] Can't bind to uninitialized property ${name}`)
+          console.warn(`[peak] Can't bind to uninitialized property ${prop}`)
         }
         return
       }
@@ -593,7 +601,6 @@ function handleEvent(event, eventType) {
       ctx.$event = event
       const locals = entry?.locals
       try {
-        if (value in ctx) value += '(event)'
         evalInContext(ctx, value, event, locals)
         if (event.defaultPrevented || event.cancelBubble) break
       } catch (err) {
@@ -691,18 +698,6 @@ export function morph(l, r, attr) {
 function evalInContext(element, code, eventArg, locals) {
   const localNames = locals ? Object.keys(locals) : []
   const localValues = locals ? Object.values(locals) : []
-
-  if (!code.match(/[\`\"\'\{\$]/)) { //`
-    code = code.replace(
-      /(?<![\w$.])\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b(?=\s*(?:[^\w$\s]|$))/g,
-      (match, identifier) => {
-        const keywords = [ 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'Math', 'Date', 'String', 'Number', 'Object', 'Array', 'Boolean', 'console', 'window', 'document', 'JSON', 'new', 'typeof', 'instanceof', 'this', 'event', '_pk_clsx' ]
-        if (keywords.includes(identifier)) return match
-        if (localNames.includes(identifier)) return match
-        return `this.${identifier}`
-      }
-    )
-  }
 
   try {
     return new Function('event', '_pk_clsx', ...localNames, `return ${code}`)

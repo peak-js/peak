@@ -4,7 +4,7 @@
   <button class="btn" :class="{active: this.isActive}">Object</button>
   <button :class="['btn', {'active': this.isActive}]">Array</button>
   <hr>
-  <button @click="toggleActive">Toggle</button>
+  <button @click="this.toggleActive()">Toggle</button>
 </template>
 
 <script>

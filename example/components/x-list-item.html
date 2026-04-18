@@ -1,20 +1,20 @@
 <template>
   <div class="todo-item">
-    <input type="checkbox" @click="done" :checked="Boolean(item.done)">
+    <input type="checkbox" @click="this.done(event)" :checked="Boolean(this.item.done)">
     <div class="flex-1">
-      <div class="contents" x-show="editing">
-        <form @submit="save" class="title contents">
-          <input x-ref="input" type="text" @blur="save" :value="item.title">
+      <div class="contents" x-show="this.editing">
+        <form @submit="this.save(event)" class="title contents">
+          <input x-ref="input" type="text" @blur="this.save(event)" :value="this.item.title">
         </form>
       </div>
-      <div class="contents" x-show="!editing">
-        <span class="title" @click="edit" x-text="item?.title"></span>
+      <div class="contents" x-show="!this.editing">
+        <span class="title" @click="this.edit(event)" x-text="this.item?.title"></span>
       </div>
     </div>
     <div class="status">
-      <span x-text="status">
+      <span x-text="this.status">
     </div>
-    <button class="ml-auto" title="Remove" @click="remove">&times;</button>
+    <button class="ml-auto" title="Remove" @click="this.remove()">&#215;</button>
   </div>
 </template>
 

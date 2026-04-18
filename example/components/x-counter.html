@@ -1,6 +1,6 @@
 <template>
-  <h1 x-text="item.name"></h1>
-  <button @click="increment" x-text="data.count"></button>
+  <h1 x-text="this.item.name"></h1>
+  <button @click="this.increment()" x-text="this.data.count"></button>
 </template>
 
 <script>

@@ -4,28 +4,28 @@
     
     <!-- Basic property watch test -->
     <div data-testid="basic-test">
-      <button data-testid="increment-btn" @click="count++">Count: <span x-text="count"></span></button>
-      <div data-testid="watch-log" x-text="watchLog"></div>
+      <button data-testid="increment-btn" @click="this.count++">Count: <span x-text="this.count"></span></button>
+      <div data-testid="watch-log" x-text="this.watchLog"></div>
     </div>
 
     <!-- Computed property watch test -->
     <div data-testid="computed-test">
-      <button data-testid="toggle-flag" @click="flag = !flag">Flag: <span x-text="flag"></span></button>
-      <div data-testid="computed-log" x-text="computedLog"></div>
+      <button data-testid="toggle-flag" @click="this.flag = !this.flag">Flag: <span x-text="this.flag"></span></button>
+      <div data-testid="computed-log" x-text="this.computedLog"></div>
     </div>
 
     <!-- Object property watch test -->
     <div data-testid="object-test">
-      <button data-testid="update-user" @click="updateUser">Update User</button>
-      <div data-testid="user-log" x-text="userLog"></div>
-      <div data-testid="user-display" x-text="user.name"></div>
+      <button data-testid="update-user" @click="this.updateUser()">Update User</button>
+      <div data-testid="user-log" x-text="this.userLog"></div>
+      <div data-testid="user-display" x-text="this.user.name"></div>
     </div>
 
     <!-- Multiple watches on same property -->
     <div data-testid="multiple-test">
-      <button data-testid="change-title" @click="updateTitle">Title: <span x-text="buttonTitle"></span></button>
-      <div data-testid="watch1-log" x-text="watch1Log"></div>
-      <div data-testid="watch2-log" x-text="watch2Log"></div>
+      <button data-testid="change-title" @click="this.updateTitle()">Title: <span x-text="this.buttonTitle"></span></button>
+      <div data-testid="watch1-log" x-text="this.watch1Log"></div>
+      <div data-testid="watch2-log" x-text="this.watch2Log"></div>
     </div>
   </div>
 </template>
@@ -51,24 +51,24 @@ export default class {
     this.watch2Log = 'Watch2: No changes'
 
     // Set up watches
-    this.$watch('count', () => {
+    this.$watch(_ => this.count, () => {
       this.watchLog = `Count changed to: ${this.count}`
     })
 
-    this.$watch('computedValue', () => {
+    this.$watch(_ => this.computedValue, () => {
       this.computedLog = `Computed changed to: ${this.computedValue}`
     })
 
-    this.$watch('user.name', () => {
+    this.$watch(_ => this.user.name, () => {
       this.userLog = `User name changed to: ${this.user.name}`
     })
-    
+
     // Multiple watches on same property
-    this.$watch('buttonTitle', () => {
+    this.$watch(_ => this.buttonTitle, () => {
       this.watch1Log = `Watch1: Title is now ${this.buttonTitle}`
     })
-    
-    this.$watch('buttonTitle', () => {
+
+    this.$watch(_ => this.buttonTitle, () => {
       this.watch2Log = `Watch2: Title changed to ${this.buttonTitle}`
     })
   }

@@ -1,22 +1,22 @@
 <template>
-  <button @click="count++" data-testid="btn0" x-text="`btn0 ${this.count}`"></button>
+  <button @click="this.count++" data-testid="btn0" x-text="`btn0 ${this.count}`"></button>
 
   <hr>
 
-  <section @click="increment(1)">
+  <section @click="this.increment(1)">
     <button data-testid="btn1" x-text="`btn1 ${this.counts[1]}`"></button>
   </section>
 
   <hr>
 
-  <section @click="incrementStop(2)">
-    <button @click="incrementStop(2)" data-testid="btn2" x-text="`btn2 ${this.counts[2]}`"></button>
+  <section @click="this.incrementStop(2)">
+    <button @click="this.incrementStop(2)" data-testid="btn2" x-text="`btn2 ${this.counts[2]}`"></button>
   </section>
 
   <hr>
 
-  <section @click="increment(3)">
-    <button @click="increment(3)" data-testid="btn3" x-text="`btn3 ${this.counts[3]}`"></button>
+  <section @click="this.increment(3)">
+    <button @click="this.increment(3)" data-testid="btn3" x-text="`btn3 ${this.counts[3]}`"></button>
   </section>
 
 </template>

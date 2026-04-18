@@ -4,10 +4,10 @@
     <div data-testid="status">loaded</div>
     
     <template x-for="item in [1, 2, 3]">
-      <button @click="clicked = item" x-text="`Button ${item}`"></button>
+      <button @click="this.clicked = item" x-text="`Button ${item}`"></button>
     </template>
     
-    <div data-testid="clicked" x-text="clicked"></div>
+    <div data-testid="clicked" x-text="this.clicked"></div>
   </div>
 </template>
 

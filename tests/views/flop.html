@@ -1,9 +1,9 @@
 <template>
-  <div x-if="!showDebug">
+  <div x-if="!this.showDebug">
     LOADING
   </div>
-  <div x-if="showDebug">
-    <button @click="debug">DEBUG</button>
+  <div x-if="this.showDebug">
+    <button @click="this.debug(event)">DEBUG</button>
   </div>
 </template>
 

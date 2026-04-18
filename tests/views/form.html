@@ -3,24 +3,24 @@
   <h1>Form</h1>
 
   <fieldset>
-    <label><input type="radio" name="color" value="red" x-model="color"> Red</label>
-    <label><input type="radio" name="color" value="green" x-model="color"> Green</label>
-    <label><input type="radio" name="color" value="blue" x-model="color"> Blue</label>
+    <label><input type="radio" name="color" value="red" x-model="this.color"> Red</label>
+    <label><input type="radio" name="color" value="green" x-model="this.color"> Green</label>
+    <label><input type="radio" name="color" value="blue" x-model="this.color"> Blue</label>
   </fieldset>
   <br>
   <div class="flex">
-    <input type="text" x-model="query">
-    <button @click="clearQuery">Clear</button>
-    <select x-model="city">
+    <input type="text" x-model="this.query">
+    <button @click="this.clearQuery(event)">Clear</button>
+    <select x-model="this.city">
       <option>tokyo</option>
       <option>paris</option>
       <option>berlin</option>
     </select>
   </div>
   <br>
-  <label><input type="checkbox" value="red" x-model="invert"> Invert</label>
-  <label><input type="checkbox" value="green" x-model="limit"> Limit</label>
-  <button @click="toggleAll">Toggle all</button>
+  <label><input type="checkbox" value="red" x-model="this.invert"> Invert</label>
+  <label><input type="checkbox" value="green" x-model="this.limit"> Limit</label>
+  <button @click="this.toggleAll(event)">Toggle all</button>
 </form>
 </template>
 
@@ -33,19 +33,19 @@ export default class {
     this.invert = true
     this.limit = true
 
-    this.$watch('query', () => {
+    this.$watch(_ => this.query, () => {
       console.log("QQ", this.query)
     })
-    this.$watch('color', () => {
+    this.$watch(_ => this.color, () => {
       console.log("CC", this.color)
     })
-    this.$watch('city', () => {
+    this.$watch(_ => this.city, () => {
       console.log("YY", this.city)
     })
-    this.$watch('invert', () => {
+    this.$watch(_ => this.invert, () => {
       console.log("VV", this.invert)
     })
-    this.$watch('limit', () => {
+    this.$watch(_ => this.limit, () => {
       console.log("LL", this.limit)
     })
   }

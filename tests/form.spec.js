@@ -43,8 +43,8 @@ test('x-model with select dropdown', async ({ page }) => {
 test('x-model with checkboxes', async ({ page }) => {
   await page.goto('/form.html');
 
-  const invertCheckbox = page.locator('input[type="checkbox"][x-model="invert"]');
-  const limitCheckbox = page.locator('input[type="checkbox"][x-model="limit"]');
+  const invertCheckbox = page.locator('input[type="checkbox"][x-model="this.invert"]');
+  const limitCheckbox = page.locator('input[type="checkbox"][x-model="this.limit"]');
 
   await expect(invertCheckbox).toBeChecked();
   await expect(limitCheckbox).toBeChecked();
@@ -75,8 +75,8 @@ test('x-model two-way binding with reactive updates', async ({ page }) => {
 test('x-model with toggle all functionality', async ({ page }) => {
   await page.goto('/form.html');
 
-  const invertCheckbox = page.locator('input[type="checkbox"][x-model="invert"]');
-  const limitCheckbox = page.locator('input[type="checkbox"][x-model="limit"]');
+  const invertCheckbox = page.locator('input[type="checkbox"][x-model="this.invert"]');
+  const limitCheckbox = page.locator('input[type="checkbox"][x-model="this.limit"]');
   const toggleAllButton = page.locator('button:has-text("Toggle all")');
 
   await expect(invertCheckbox).toBeChecked();
@@ -106,7 +106,7 @@ test('x-model console logging validation', async ({ page }) => {
   const select = page.locator('select');
   await select.selectOption('paris');
 
-  const invertCheckbox = page.locator('input[type="checkbox"][x-model="invert"]');
+  const invertCheckbox = page.locator('input[type="checkbox"][x-model="this.invert"]');
   await invertCheckbox.uncheck();
 
   await page.waitForTimeout(100);
@@ -123,8 +123,8 @@ test('x-model preserves initial values', async ({ page }) => {
   const textInput = page.locator('input[type="text"]');
   const redRadio = page.locator('input[type="radio"][value="red"]');
   const select = page.locator('select');
-  const invertCheckbox = page.locator('input[type="checkbox"][x-model="invert"]');
-  const limitCheckbox = page.locator('input[type="checkbox"][x-model="limit"]');
+  const invertCheckbox = page.locator('input[type="checkbox"][x-model="this.invert"]');
+  const limitCheckbox = page.locator('input[type="checkbox"][x-model="this.limit"]');
 
   await expect(textInput).toHaveValue('ducks');
   await expect(redRadio).toBeChecked();

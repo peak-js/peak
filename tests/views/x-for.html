@@ -1,19 +1,19 @@
 <template>
   <ul>
-    <template x-for="fruit in fruits">
+    <template x-for="fruit in this.fruits">
       <li x-text="fruit"></li>
     </template>
   </ul>
   <hr>
   <table>
     <tr><th>id</th><th>title</th></tr>
-    <template x-for="task in tasks">
+    <template x-for="task in this.tasks">
       <tr><td x-text="task.id"></td><td x-text="task.title"></td></tr>
     </template>
   </table>
   <hr>
   <ul>
-    <li x-for="color in colors" x-text="color"></li>
+    <li x-for="color in this.colors" x-text="color"></li>
   </ul>
 </template>
 

@@ -4,30 +4,30 @@
     <div>
       X <span x-text="this.mouse.x"></span>
       Y <span x-text="this.mouse.y"></span>
-      <input type="checkbox" x-model="inputBool">
+      <input type="checkbox" x-model="this.inputBool">
     </div>
-    <form class="add-item" @submit="addItem">
+    <form class="add-item" @submit="this.addItem(event)">
       <input x-ref="input" name="title" type="text" placeholder="What needs doing?">
     </form>
     <div class="items">
-      <template x-for="item in items">
+      <template x-for="item in this.items">
         <x-list-item :item="item" :title="item.title"></x-list-item>
       </template>
     </div>
     <footer class="flex space-between mt-24">
       <span class="text-14" x-text="`${this.items.length} items`"></span>
       <span>
-        <template x-for="label in labels">
+        <template x-for="label in this.labels">
           <button
-            :class="this.filter == this.label && 'selected'"
+            :class="this.filter == label && 'selected'"
             class="mx-2"
-            @click="setFilter"
+            @click="this.setFilter(event)"
             :data-filter="label"
-            x-text="`${this.label}!`"
+            x-text="`${label}!`"
           />
         </template>
       </span>
-      <button class="flat" @click="clearCompleted">Clear completed</button>
+      <button class="flat" @click="this.clearCompleted()">Clear completed</button>
     </footer>
   </div>
   <footer class="mt-24 muted text-center">
@@ -42,13 +42,13 @@ import ComposableMouse from '../lib/composable-mouse.js'
 export default class {
   initialize() {
     this.clearCount = 0
-    this.$watch('filter', () => console.log("FILTERCHANGE"))
-    this.$watch('clearCount', () => console.log("COUNTCHANGE"))
+    this.$watch(_ => this.filter, () => console.log("FILTERCHANGE"))
+    this.$watch(_ => this.clearCount, () => console.log("COUNTCHANGE"))
     this.mouse = this.$compose(ComposableMouse)
     this.inputText = ''
     this.inputBool = false
-    this.$watch('inputText', () => console.log("INPUTTEXT", this.inputText))
-    this.$watch('inputBool', () => console.log("INPUTBOOL", this.inputText))
+    this.$watch(_ => this.inputText, () => console.log("INPUTTEXT", this.inputText))
+    this.$watch(_ => this.inputBool, () => console.log("INPUTBOOL", this.inputText))
   }
   addItem(e) {
     e.preventDefault()

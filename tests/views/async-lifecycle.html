@@ -6,13 +6,13 @@
       <h2>Basic Async Properties</h2>
       <div data-testid="async-items" x-text="this.items?.length || 'Loading...'"></div>
       <div data-testid="async-user" x-text="this.user?.name || 'Loading...'"></div>
-      <div data-testid="async-status" x-text="status"></div>
+      <div data-testid="async-status" x-text="this.status"></div>
     </div>
 
     <div>
       <h2>Async Properties with Rendering</h2>
       <ul data-testid="items-list">
-        <li x-for="item in items" x-text="item.name"></li>
+        <li x-for="item in this.items" x-text="item.name"></li>
       </ul>
     </div>
 
@@ -25,8 +25,8 @@
 
     <div>
       <h2>Reactive Updates</h2>
-      <button @click="updateAsyncData">Update Async Data</button>
-      <div data-testid="update-counter" x-text="updateCounter"></div>
+      <button @click="this.updateAsyncData()">Update Async Data</button>
+      <div data-testid="update-counter" x-text="this.updateCounter"></div>
     </div>
   </div>
 </template>

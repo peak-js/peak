@@ -30,11 +30,11 @@
   <hr>
   <input type="checkbox" :checked="false"> Dynamic checkbox off
   <hr>
-  <input type="checkbox" :checked="isChecked"> Dynamic checkbox
-  <button @click="toggleChecked">Toggle checked</button>
+  <input type="checkbox" :checked="this.isChecked"> Dynamic checkbox
+  <button @click="this.toggleChecked()">Toggle checked</button>
   <hr>
-  <div :contenteditable="isEditable">Content</div>
-  <button @click="toggleEditable">Toggle editable</button>
+  <div :contenteditable="this.isEditable">Content</div>
+  <button @click="this.toggleEditable()">Toggle editable</button>
   <hr>
   <x-defaulting-test name="Alice" />
   <hr>

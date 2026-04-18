@@ -1,12 +1,12 @@
 <template>
-  <button @click="cycleMessage">CYCLE</button>
-  <x-echo :message="message"></x-echo>
-  <x-echo :message="alt"></x-echo>
-  <button @click="addItem">ADDZ</button>
-  <template x-for="item in items">
+  <button @click="this.cycleMessage()">CYCLE</button>
+  <x-echo :message="this.message"></x-echo>
+  <x-echo :message="this.alt"></x-echo>
+  <button @click="this.addItem()">ADDZ</button>
+  <template x-for="item in this.items">
     <div :key="item.id" x-text="item.name"></div>
   </template>
-  <template x-for="item in items">
+  <template x-for="item in this.items">
     <x-counter :key="item.id" :item="item"></x-counter>
   </template>
 </template>
