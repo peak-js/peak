@@ -25,13 +25,13 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: 'documentation/package-lock.json'
+          cache-dependency-path: 'docs/package-lock.json'
 
       - name: Install dependencies
-        run: cd documentation && npm ci
+        run: cd docs && npm ci
 
       - name: Build documentation
-        run: cd documentation && npm run docs:build
+        run: cd docs && npm run docs:build
 
       - name: Configure pages
         uses: actions/configure-pages@v5
@@ -39,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'documentation/docs/.vitepress/dist'
+          path: 'docs/docs/.vitepress/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment

@@ -2,6 +2,24 @@
 
 Peak.js provides a set of template directives that make it easy to create dynamic, reactive user interfaces. These directives follow a familiar syntax similar to Vue.js and Alpine.js.
 
+## Expressions
+
+Directive values and `:attr` bindings are plain JavaScript expressions evaluated in the context of the component. Since `this` refers to the component instance, use `this.` to access component properties and methods:
+
+```html
+<span x-text="this.count"></span>
+<button @click="this.increment()">+</button>
+<div :class="this.isActive ? 'active' : ''">...</div>
+```
+
+One exception: variables introduced by `x-for` loops are local JavaScript variables and don't need `this.`:
+
+```html
+<template x-for="item in this.items">
+  <li x-text="item.name"></li>  <!-- item is a local variable, no this. -->
+</template>
+```
+
 ## Text and HTML Content
 
 ### x-text
@@ -11,9 +29,9 @@ The `x-text` directive sets the text content of an element:
 ```html
 <template>
   <div>
-    <h1 x-text="title"></h1>
-    <p x-text="`Hello, ${name}!`"></p>
-    <span x-text="count + ' items'"></span>
+    <h1 x-text="this.title"></h1>
+    <p x-text="`Hello, ${this.name}!`"></p>
+    <span x-text="this.count + ' items'"></span>
   </div>
 </template>
 
@@ -35,8 +53,8 @@ The `x-html` directive sets the HTML content of an element:
 ```html
 <template>
   <div>
-    <div x-html="richContent"></div>
-    <div x-html="markdown.render(post.content)"></div>
+    <div x-html="this.richContent"></div>
+    <div x-html="this.markdown.render(this.post.content)"></div>
   </div>
 </template>
 
@@ -65,14 +83,14 @@ Conditionally render elements based on a condition:
 ```html
 <template>
   <div>
-    <p x-if="user.isLoggedIn">Welcome back, <span x-text="user.name"></span>!</p>
-    <p x-if="!user.isLoggedIn">Please log in to continue.</p>
+    <p x-if="this.user.isLoggedIn">Welcome back, <span x-text="this.user.name"></span>!</p>
+    <p x-if="!this.user.isLoggedIn">Please log in to continue.</p>
 
     <!-- With template wrapper -->
-    <template x-if="showAdvancedOptions">
+    <template x-if="this.showAdvancedOptions">
       <div class="advanced-panel">
         <h3>Advanced Settings</h3>
-        <input type="checkbox" x-model="enableDebug"> Enable Debug Mode
+        <input type="checkbox" x-model="this.enableDebug"> Enable Debug Mode
       </div>
     </template>
   </div>
@@ -86,16 +104,16 @@ Chain conditions with `x-else-if` and `x-else`:
 ```html
 <template>
   <div>
-    <div x-if="status === 'loading'" class="spinner">Loading...</div>
-    <div x-else-if="status === 'error'" class="error">
-      <p>Something went wrong: <span x-text="errorMessage"></span></p>
+    <div x-if="this.status === 'loading'" class="spinner">Loading...</div>
+    <div x-else-if="this.status === 'error'" class="error">
+      <p>Something went wrong: <span x-text="this.errorMessage"></span></p>
     </div>
-    <div x-else-if="status === 'empty'" class="empty">
+    <div x-else-if="this.status === 'empty'" class="empty">
       <p>No results found.</p>
     </div>
     <div x-else>
       <ul>
-        <li x-for="item in items" x-text="item.name"></li>
+        <li x-for="item in this.items" x-text="item.name"></li>
       </ul>
     </div>
   </div>
@@ -109,15 +127,15 @@ Toggle element visibility with CSS display property:
 ```html
 <template>
   <div>
-    <button @click="togglePanel">Toggle Panel</button>
+    <button @click="this.togglePanel()">Toggle Panel</button>
 
     <!-- Element stays in DOM, just hidden/shown -->
-    <div x-show="showPanel" class="panel">
+    <div x-show="this.showPanel" class="panel">
       <p>This panel can be toggled!</p>
     </div>
 
     <!-- With transition -->
-    <div x-show="showModal" x-transition class="modal">
+    <div x-show="this.showModal" x-transition class="modal">
       <p>Modal content with smooth transition</p>
     </div>
   </div>
@@ -129,7 +147,7 @@ export default class {
     this.showPanel = false
     this.showModal = false
   }
-  
+
   togglePanel() {
     this.showPanel = !this.showPanel
   }
@@ -148,33 +166,23 @@ Render lists of items:
   <div>
     <!-- Basic loop -->
     <ul>
-      <li x-for="item in items" x-text="item"></li>
+      <li x-for="item in this.items" x-text="item"></li>
     </ul>
 
     <!-- With index -->
     <ol>
-      <li x-for="(item, index) in items">
+      <li x-for="item in this.items">
         <span x-text="index + 1"></span>: <span x-text="item"></span>
       </li>
     </ol>
 
-    <!-- Object iteration -->
-    <dl>
-      <template x-for="(value, key) in userProfile">
-        <div>
-          <dt x-text="key"></dt>
-          <dd x-text="value"></dd>
-        </div>
-      </template>
-    </dl>
-
     <!-- Complex objects -->
     <div class="user-grid">
-      <div x-for="user in users" class="user-card" :key="user.id">
+      <div x-for="user in this.users" class="user-card" :key="user.id">
         <img :src="user.avatar" :alt="user.name">
         <h3 x-text="user.name"></h3>
         <p x-text="user.email"></p>
-        <button @click="editUser(user)">Edit</button>
+        <button @click="this.editUser(user)">Edit</button>
       </div>
     </div>
   </div>
@@ -212,13 +220,12 @@ Use the `:key` attribute for efficient list updates:
 <template>
   <div>
     <!-- Good: Using unique keys -->
-    <div x-for="todo in todos" :key="todo.id">
-      <input type="checkbox" x-model="todo.completed">
+    <div x-for="todo in this.todos" :key="todo.id">
       <span x-text="todo.text"></span>
     </div>
 
     <!-- Also good: Using index when items don't change order -->
-    <div x-for="(item, index) in staticList" :key="index">
+    <div x-for="item in this.staticList" :key="index">
       <span x-text="item"></span>
     </div>
   </div>
@@ -234,50 +241,33 @@ Two-way data binding for form inputs:
 ```html
 <template>
   <form>
-    <!-- Text inputs -->
-    <input x-model="user.name" placeholder="Name">
-    <textarea x-model="user.bio" placeholder="Bio"></textarea>
+    <!-- Text input -->
+    <input x-model="this.name" placeholder="Name">
+    <textarea x-model="this.bio" placeholder="Bio"></textarea>
 
-    <!-- Checkboxes -->
+    <!-- Checkbox -->
     <label>
-      <input type="checkbox" x-model="user.isActive"> Active
+      <input type="checkbox" x-model="this.isActive"> Active
     </label>
-
-    <!-- Multiple checkboxes -->
-    <div>
-      <label><input type="checkbox" x-model="skills" value="JavaScript"> JavaScript</label>
-      <label><input type="checkbox" x-model="skills" value="Python"> Python</label>
-      <label><input type="checkbox" x-model="skills" value="Rust"> Rust</label>
-    </div>
 
     <!-- Radio buttons -->
     <div>
-      <label><input type="radio" x-model="theme" value="light"> Light</label>
-      <label><input type="radio" x-model="theme" value="dark"> Dark</label>
-      <label><input type="radio" x-model="theme" value="auto"> Auto</label>
+      <label><input type="radio" x-model="this.theme" value="light"> Light</label>
+      <label><input type="radio" x-model="this.theme" value="dark"> Dark</label>
+      <label><input type="radio" x-model="this.theme" value="auto"> Auto</label>
     </div>
 
     <!-- Select dropdown -->
-    <select x-model="user.country">
+    <select x-model="this.country">
       <option value="">Select Country</option>
       <option value="us">United States</option>
       <option value="ca">Canada</option>
       <option value="uk">United Kingdom</option>
     </select>
 
-    <!-- Multiple select -->
-    <select x-model="selectedCategories" multiple>
-      <option value="tech">Technology</option>
-      <option value="design">Design</option>
-      <option value="business">Business</option>
-    </select>
-
-    <!-- Number input -->
-    <input type="number" x-model="user.age" min="0" max="120">
-
     <!-- Range slider -->
-    <input type="range" x-model="volume" min="0" max="100">
-    <span x-text="volume + '%'"></span>
+    <input type="range" x-model="this.volume" min="0" max="100">
+    <span x-text="this.volume + '%'"></span>
   </form>
 </template>
 
@@ -314,13 +304,10 @@ The `x-model` directive provides two-way data binding with the following behavio
 <template>
   <div>
     <!-- Text input - updates on every keystroke -->
-    <input x-model="username" placeholder="Username">
+    <input x-model="this.username" placeholder="Username">
 
-    <!-- Number input - value is stored as string -->
-    <input type="number" x-model="price" step="0.01">
-
-    <!-- Use JavaScript to convert to number if needed -->
-    <input type="number" x-model="quantity" @input="quantity = parseInt(quantity)">
+    <!-- Number input - value is stored as string, convert if needed -->
+    <input type="number" x-model="this.price" step="0.01">
   </div>
 </template>
 ```
@@ -337,8 +324,8 @@ Create references to DOM elements:
     <video x-ref="videoPlayer" controls>
       <source src="video.mp4" type="video/mp4">
     </video>
-    <button @click="playVideo">Play</button>
-    <button @click="pauseVideo">Pause</button>
+    <button @click="this.playVideo()">Play</button>
+    <button @click="this.pauseVideo()">Pause</button>
   </div>
 </template>
 
@@ -363,24 +350,20 @@ Bind attributes dynamically using a leading `:` before the attribute name.  Dyna
 ```html
 <template>
   <!-- Basic attribute binding -->
-  <img :src="imageUrl" :alt="imageDescription">
-  <a :href="linkUrl" :target="linkTarget">Visit Site</a>
+  <img :src="this.imageUrl" :alt="this.imageDescription">
+  <a :href="this.linkUrl" :target="this.linkTarget">Visit Site</a>
 
   <!-- Class binding -->
-  <div :class="containerClass">Container</div>
-  <button class="button" :class="{ active: isActive, disabled: isDisabled }">Button</button>
-  <span :class="[baseClass, statusClass]">Status</span>
+  <div :class="this.containerClass">Container</div>
+  <button class="button" :class="{ active: this.isActive, disabled: this.isDisabled }">Button</button>
+  <span :class="[this.baseClass, this.statusClass]">Status</span>
 
   <!-- Style binding -->
-  <div :style="{ color: textColor, fontSize: fontSize + 'px' }">Styled text</div>
-  <div :style="dynamicStyles">Dynamic styles</div>
+  <div :style="{ color: this.textColor, fontSize: this.fontSize + 'px' }">Styled text</div>
 
   <!-- Boolean attributes -->
-  <input :disabled="isLoading" :required="isRequired">
+  <input :disabled="this.isLoading" :required="this.isRequired">
 </template>
 ```
-::: info Expressions and `this`
-For simple expressions, as a shorthand you can often omit `this.` when referring to component properties.  Once an expression contains quote characters `` ` ``, `"`, or `'` then the shorthand syntax is not available.
-:::
 
 

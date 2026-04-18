@@ -31,11 +31,11 @@ The `<template>` contains the component's HTML structure:
 <template>
   <div class="card">
     <header>
-      <h2 x-text="title" />
-      <button @click="toggle" x-text="isExpanded ? 'Collapse' : 'Expand'" />
+      <h2 x-text="this.title" />
+      <button @click="this.toggle()" x-text="this.isExpanded ? 'Collapse' : 'Expand'" />
     </header>
 
-    <main x-show="isExpanded" x-transition>
+    <main x-show="this.isExpanded" x-transition>
       <slot />
     </main>
   </div>
@@ -114,10 +114,10 @@ Declare reactive props with `$prop()` in the the `initialize()` lifecycle method
 ```html
 <!-- components/x-user-card.html -->
 <template>
-  <div class="user-card" :class="`size-${size}`">
-    <img :src="user.avatar" :alt="user.name">
-    <p x-text="user.email"></p>
-    <span :class="`status ${user.status}`" x-text="user.status"></span>
+  <div class="user-card" :class="`size-${this.size}`">
+    <img :src="this.user.avatar" :alt="this.user.name">
+    <p x-text="this.user.email"></p>
+    <span :class="`status ${this.user.status}`" x-text="this.user.status"></span>
   </div>
 </template>
 
@@ -137,22 +137,23 @@ Pass props using as attributes.  When the attribute name starts with a `:` then 
 
 ```html
 <!-- static props -->
-<x-user-card :user="currentUser" show-actions="true" />
+<x-user-card :user="this.currentUser" show-actions="true" />
 
 <!-- dynamic props -->
 <x-user-card
-  :user="user"
-  :show-actions="user.id === currentUser.id"
+  :user="this.currentUser"
+  :show-actions="this.currentUser.id === this.me.id"
 />
 
 <!-- loop with props -->
-<x-user-card
-  x-for="user in users"
-  :key="user.id"
-  :user="user"
-  :show-actions="canEdit(user)"
-  @edit="handleEditUser">
-/>
+<template x-for="user in this.users">
+  <x-user-card
+    :key="user.id"
+    :user="user"
+    :show-actions="this.canEdit(user)"
+    @edit="this.handleEditUser(event)">
+  </x-user-card>
+</template>
 ```
 
 ## Lifecycle Methods
@@ -170,7 +171,7 @@ export default class {
     this.items = []
 
     // set up watchers
-    this.$watch('count', () => {
+    this.$watch(_ => this.count, () => {
       console.log('Count changed:', this.count)
     })
 

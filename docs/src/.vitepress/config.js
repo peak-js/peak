@@ -58,7 +58,7 @@ export default defineConfig({
     ],
 
     footer: {
-      copyright: 'Copyright © 2025 David Chester &lt;david@chester.cx&gt;',
+      copyright: 'Copyright © 2025-2026 David Chester &lt;david@chester.cx&gt;',
     }
   }
 })

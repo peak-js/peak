@@ -9,8 +9,8 @@ Properties in components are reactive by default. That means once you assign a v
 ```html
 <template>
   <div>
-    <p x-text="message"></p>
-    <button @click="updateMessage">Update</button>
+    <p x-text="this.message"></p>
+    <button @click="this.updateMessage()">Update</button>
   </div>
 </template>
 
@@ -35,9 +35,9 @@ Use getters to create computed properties that automatically update when their d
 ```html
 <template>
   <div>
-    <input x-model="firstName">
-    <input x-model="lastName">
-    <p x-text="fullName"></p>
+    <input x-model="this.firstName">
+    <input x-model="this.lastName">
+    <p x-text="this.fullName"></p>
   </div>
 </template>
 
@@ -71,7 +71,7 @@ Then, when you reference store values in components, then when the value change,
 ```html
 <!-- count-view.html -->
 <template>
-  Count is <span x-text="count"/>
+  Count is <span x-text="this.count"/>
 </template>
 
 <script>
@@ -91,8 +91,8 @@ Use `$watch()` to run code when reactive data changes:
 ```html
 <template>
   <div>
-    <input x-model="search">
-    <p x-text="results.length + ' results'"></p>
+    <input x-model="this.search">
+    <p x-text="this.results.length + ' results'"></p>
   </div>
 </template>
 
@@ -102,8 +102,8 @@ export default class {
     this.search = ""
     this.results = []
 
-    // Watch for search changes
-    this.$watch('search', () => {
+    // watch for search changes
+    this.$watch(_ => this.search, () => {
       this.performSearch()
     })
   }
@@ -120,20 +120,21 @@ export default class {
 </script>
 ```
 
-### Watching Deep Changes
+### Watching Object Properties
 
-To watch for deep changes in objects or arrays, the watcher automatically tracks nested properties:
+`$watch` tracks which reactive properties on `this` are accessed when the getter runs. For direct properties this is straightforward:
 
 ```javascript
-this.user = { profile: { name: "Alice" } }
+this.$watch(_ => this.user, () => {
+  console.log('User changed:', this.user)
+})
+```
 
+For dot-paths, pass a string — the watcher tracks the top-level reactive property:
+
+```javascript
 this.$watch('user.profile.name', () => {
   console.log('Name changed to:', this.user.profile.name)
-})
-
-// Or watch the entire object
-this.$watch('user', () => {
-  console.log('User object changed')
 })
 ```
 

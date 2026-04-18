@@ -4,7 +4,7 @@ Easy reactive web framework with no setup required
 
 ```html
 <template>
-  <button @click="greet">Click</button>
+  <button @click="this.greet()">Click</button>
 </template>
 
 <script>
@@ -29,7 +29,7 @@ Easy reactive web framework with no setup required
 - Optional url-based view routing
 - Lightweight at ~5kb gzipped
 - Support for server-side rendering (SSR)
-- Optional Vite plugin for bundling and HMR 
+- Optional Vite plugin for bundling and HMR
 
 ## Components
 
@@ -39,8 +39,8 @@ Components are defined in plain HTML files, with each file having a `<template>`
 <!-- components/x-counter.html -->
 
 <template>
-  <button @click="increment">
-    <span x-text="count" />
+  <button @click="this.increment()">
+    <span x-text="this.count" />
   </button>
 </template>
 
@@ -77,22 +77,24 @@ Register components and use them directly in markup:
 
 ## Templates
 
+Template expressions are plain JavaScript evaluated in the context of the component.
+
 ### x-if
 
 Conditionally render a block
 
 ```html
-<img x-if="loading" src="spinner.svg">
+<img x-if="this.loading" src="spinner.svg">
 ```
 
 Also available are `x-else` and `x-else-if`
 
 ```html
-<template x-if="loading">
+<template x-if="this.loading">
   <img src="spinner.svg">
 </template>
 
-<template x-else-if="error">
+<template x-else-if="this.error">
   <img src="error.svg">
 </template>
 
@@ -107,7 +109,7 @@ Render some HTML for each item in an array
 
 ```html
 <ul>
-  <li x-for="item in items">
+  <li x-for="item in this.items">
     <span x-text="item.title" />
   </li>
 </ul>
@@ -118,7 +120,7 @@ Render some HTML for each item in an array
 Set the text content of an element
 
 ```html
-<span x-text="`Hello, ${name}`" />
+<span x-text="`Hello, ${this.name}`" />
 ```
 
 ### x-html
@@ -126,7 +128,7 @@ Set the text content of an element
 Set the HTML content of an element
 
 ```html
-<div x-html="markdown.render('# Page title')"></div>
+<div x-html="this.markdown.render('# Page title')"></div>
 ```
 
 ### x-show
@@ -134,7 +136,16 @@ Set the HTML content of an element
 Set the visibility of an element
 
 ```html
-<div x-show="open">Content...</div>
+<div x-show="this.open">Content...</div>
+```
+
+### x-model
+
+Two-way binding for form inputs
+
+```html
+<input x-model="this.query">
+<input type="checkbox" x-model="this.enabled">
 ```
 
 ### x-ref
@@ -143,7 +154,18 @@ Refer to an HTML element via `$refs`
 
 ```html
 <input x-ref="searchInput">
-<button @click="$refs.searchInput.focus()">Search</button>
+<button @click="this.$refs.searchInput.focus()">Search</button>
+```
+
+## Event Handling
+
+Use `@event` to handle DOM events. The value is a plain JS expression. The native event is available as `event`:
+
+```html
+<button @click="this.count++">increment</button>
+<button @click="this.reset()">reset</button>
+<form @submit="this.handleSubmit(event)">...</form>
+<input @input="this.query = event.target.value">
 ```
 
 ## Component methods
@@ -156,7 +178,6 @@ Run code when the component is initialized before mounted
 <script>
 export default class {
   initialize() {
-    // initialize the component
     this.pollerId = setInterval(_ => {
       this.items = fetch('/feed')
     }, 30_000)
@@ -180,27 +201,26 @@ export default class {
     // ...
   }
   teardown() {
-    // clean up when the component is destroyed
     clearInterval(this.pollerId)
   }
 }
 </script>
 ```
 
-### $watch(expr)
+### $watch(getter, fn)
 
-Run methods when reactive data changes
+Run a callback when reactive data changes. Pass an arrow function that reads the reactive property to watch:
 
 ```html
 <template>
-  <button @click="count++" x-text="count" />
+  <button @click="this.count++" x-text="this.count" />
 </template>
 
 <script>
 export default class {
   initialize() {
     this.count = 0
-    this.$watch('count', () => {
+    this.$watch(_ => this.count, () => {
       console.log("count is now", this.count)
     })
   }
@@ -214,14 +234,13 @@ Emit events that bubble up to parent components
 
 ```html
 <template>
-  <input @input="$emit('change')">
+  <input @input="this.$emit('change', event.target.value)">
 </template>
 ```
 
 ### $on(eventName, handler)
 
-Handle emitted events native and custom
-
+Handle native and custom events
 
 ## Lifecycle events
 
@@ -235,7 +254,7 @@ Specify props with `$prop` during the `initialize()` lifecycle method:
 
 ```html
 <template>
-  Greetings, <span x-text="name" />!
+  Greetings, <span x-text="this.name" />!
 </template>
 
 <script>
@@ -251,11 +270,11 @@ export default class {
 
 ### $event
 
-Refer to the event being handled
+The native event currently being handled, accessible inside methods:
 
 ```html
 <template>
-  <button @click="incrementBy(10)">Add 10</button>
+  <button @click="this.incrementBy(10)">Add 10</button>
 </template>
 
 <script>
@@ -272,23 +291,22 @@ export default class {
 
 Refer to elements within the component by the name in their `x-ref` attribute
 
-
 ## Computed properties
 
-Use instance getters for display formatting, and other derived properties
+Use instance getters for display formatting and other derived properties
 
 ```html
 <template>
-  <div x-text="formattedTime" />
+  <div x-text="this.formattedTime" />
 </template>
 
 <script>
 export default class {
   get formattedTime() {
-    return new this.time.toISOString()
+    return this.time.toISOString()
   }
-  created() {
-    this.time = new Date;
+  initialize() {
+    this.time = new Date
   }
 }
 </script>
@@ -312,7 +330,7 @@ Styles defined in the component are scoped to the component — they won't leak 
 
 ## Routing
 
-Peak comes with an optional built-in router.  Register views to route patterns for integration with the History API.  Views are just regular components, associated with a route.
+Peak comes with an optional built-in router. Register views to route patterns for integration with the History API. Views are just regular components, associated with a route.
 
 ```html
 <nav>

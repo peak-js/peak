@@ -15,13 +15,13 @@ Create a file called `x-counter.html`:
 <template>
   <div class="counter">
     <h2>Welcome to Peak.js</h2>
-    <b class="number" x-text="count" />
+    <b class="number" x-text="this.count" />
     <div class="buttons">
-      <button @click="decrement" :disabled="count <= 0">-</button>
-      <button @click="increment">+</button>
+      <button @click="this.decrement()" :disabled="this.count <= 0">-</button>
+      <button @click="this.increment()">+</button>
     </div>
-    <p class="status" x-text="statusMessage"></p>
-    <button @click="reset" x-show="count != 0">Reset</button>
+    <p class="status" x-text="this.statusMessage"></p>
+    <button @click="this.reset()" x-show="this.count != 0">Reset</button>
   </div>
 </template>
 
@@ -50,12 +50,8 @@ export default class {
 
 <style>
 .counter {
-  border: 2px solid #eee;
-  border-radius: 8px;
   font-family: system-ui, sans-serif;
-  max-width: 300px;
   margin: auto;
-  padding: 24px;
   text-align: center;
 }
 .number {
@@ -66,14 +62,9 @@ export default class {
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin: 20px 0;
 }
 button {
-  padding: 1em 2em;
-}
-.status {
-  color: #777;
-  font-style: italic;
+  padding: 0.8em 2em;
 }
 </style>
 ```
@@ -123,10 +114,12 @@ initialize() {
 Any property you set on `this` becomes reactive, meaning the UI updates automatically when the value changes.
 
 ### Template Directives
-- `x-text="count"` - Displays the value of `count`
-- `@click="increment"` - Calls the `increment` method when clicked
-- `:disabled="count <= 0"` - Binds the disabled attribute to an expression
-- `x-show="count > 0"` - Shows/hides the element based on condition
+- `x-text="this.count"` - displays the value of `count`
+- `@click="this.increment()"` - calls the `increment` method when clicked
+- `:disabled="this.count <= 0"` - binds the disabled attribute to an expression
+- `x-show="this.count > 0"` - shows/hides the element based on condition
+
+Template expressions are plain JavaScript evaluated in the context of your component, so `this` refers to the component instance. Use `this.` to access component properties and methods.
 
 ### Computed Properties
 ```javascript
@@ -138,53 +131,9 @@ get statusMessage() {
 ```
 Getter methods automatically become computed properties that update when their dependencies change.
 
-## Common Patterns
-
-As you build more components, here are some patterns you'll use frequently:
-
-### Component Communication
-Create a parent component that manages multiple counters:
-
-```html
-<!-- components/x-counter-manager.html -->
-<template>
-  <div>
-    <h2>Counter Manager</h2>
-    <p>Total across all counters: <span x-text="totalCount"></span></p>
-
-    <div x-for="counter in counters" :key="counter.id">
-      <x-counter @count-changed="updateTotal"></x-counter>
-    </div>
-
-    <button @click="addCounter">Add Counter</button>
-  </div>
-</template>
-```
-
-### Form Handling
-
-```html
-<form @submit.prevent="handleSubmit">
-  <input x-model="form.email" type="email" required>
-  <input x-model="form.password" type="password" required>
-  <button type="submit" :disabled="!isFormValid">Submit</button>
-</form>
-```
-
-### Loading States
-
-```html
-<div x-if="loading">Loading...</div>
-<div x-else>
-  <!-- content -->
-</div>
-```
-
-## Resources
+## Next resources to explore...
 
 - [Template Directives Guide](/guide/templates) - Learn all available directives
 - [Reactivity Guide](/guide/reactivity) - Understand how reactivity works
 - [Component Guide](/guide/components) - Deep dive into component features
 - [Event Handling](/guide/events) - Master event handling patterns
-
-You're now ready to build amazing reactive applications with Peak.js! 🎉
