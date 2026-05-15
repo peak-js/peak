@@ -594,7 +594,7 @@ function handleEvent(event, eventType) {
     let value = target.getAttribute(`@${eventType}`)
 
     if (value) {
-      let ctx = target
+      let ctx = target.parentElement
       while (!isPeak(ctx) && ctx !== document) {
         ctx = ctx.parentElement
       }
