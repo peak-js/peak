@@ -1,0 +1,13 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+component('x-object-prop', '/components/x-object-prop.html')
+
+router.route('/object-prop.html', '/views/object-prop.html')
+
+</script>

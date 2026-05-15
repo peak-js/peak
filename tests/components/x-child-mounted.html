@@ -1,0 +1,16 @@
+<template>
+  <div data-testid="child-status" x-text="this.status"></div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.status = 'initialized'
+  }
+  async mounted() {
+    // simulate an async data fetch
+    await new Promise(resolve => setTimeout(resolve, 50))
+    this.status = 'mounted'
+  }
+}
+</script>

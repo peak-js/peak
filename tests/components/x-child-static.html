@@ -1,0 +1,35 @@
+<template>
+  <div class="child-static" data-testid="static-child">
+    <h2>Child Static (should only render once)</h2>
+    <p data-testid="own-value">Own state: <span x-text="this.ownValue" /></p>
+    <p data-testid="render-count-static">Render count: <span x-text="this.renderCount" /></p>
+    <button @click="this.updateOwn()">Update own state</button>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.ownValue = 'initial'
+    this.renderCount = 0
+  }
+  
+  mounted() {
+    this.renderCount++
+    console.log('x-child-static: mounted/rendered', this.renderCount)
+  }
+  
+  updateOwn() {
+    this.ownValue = 'updated-' + Date.now()
+    console.log('x-child-static: own state updated')
+  }
+}
+</script>
+
+<style>
+.child-static {
+  border: 2px solid blue;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+</style>

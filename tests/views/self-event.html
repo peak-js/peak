@@ -1,0 +1,15 @@
+<template>
+  <div data-testid="result" x-text="this.received"></div>
+  <x-self-emitter @pang="this.onPang(event)"></x-self-emitter>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.received = 'none'
+  }
+  onPang(e) {
+    this.received = e.detail
+  }
+}
+</script>

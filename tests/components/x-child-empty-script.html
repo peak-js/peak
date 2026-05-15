@@ -1,0 +1,17 @@
+<template>
+  <div data-testid="child-status" x-text="this.status"></div>
+</template>
+
+<script type="module" src="/@vite/client"></script>
+
+<script>
+export default class {
+  initialize() {
+    this.status = 'initialized'
+  }
+  async mounted() {
+    await new Promise(resolve => setTimeout(resolve, 50))
+    this.status = 'mounted'
+  }
+}
+</script>

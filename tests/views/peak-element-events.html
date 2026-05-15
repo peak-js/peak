@@ -1,0 +1,15 @@
+<template>
+  <div data-testid="log" x-text="this.log"></div>
+  <x-emitter @pong="this.onPong(event)"></x-emitter>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.log = 'none'
+  }
+  onPong(e) {
+    this.log = e.detail
+  }
+}
+</script>

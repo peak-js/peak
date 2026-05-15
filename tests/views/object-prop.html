@@ -1,0 +1,14 @@
+<template>
+  <x-object-prop x-if="this.user" :user="this.user"></x-object-prop>
+</template>
+
+<script>
+export default class {
+  async initialize() {
+    this.user = null
+    // simulate fetching data -- child is inserted after the object arrives
+    await new Promise(resolve => setTimeout(resolve, 50))
+    this.user = { name: 'Alice', age: 30 }
+  }
+}
+</script>

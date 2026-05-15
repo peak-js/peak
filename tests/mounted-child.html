@@ -1,0 +1,27 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+// register x-child-mounted with an artificial delay to simulate the case
+// where the parent renders and inserts <x-child-mounted> into the DOM
+// before customElements.define('x-child-mounted', ...) has been called --
+// which is what happens in practice when all component() calls are made in
+// parallel and the child's html fetch takes longer than the parent's
+const originalFetch = window.fetch
+window.fetch = async (url, ...args) => {
+  if (typeof url === 'string' && url.includes('x-child-mounted')) {
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  return originalFetch(url, ...args)
+}
+
+component('x-child-mounted', '/components/x-child-mounted.html')
+component('x-child-empty-script', '/components/x-child-empty-script.html')
+
+router.route('/mounted-child.html', '/views/mounted-child.html')
+
+</script>

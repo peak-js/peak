@@ -1,0 +1,15 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+component('x-emitter', '/components/x-emitter.html')
+component('x-self-emitter', '/components/x-self-emitter.html')
+
+router.route('/peak-element-events.html', '/views/peak-element-events.html')
+router.route('/self-event.html', '/views/self-event.html')
+
+</script>
