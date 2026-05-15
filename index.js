@@ -263,18 +263,12 @@ export const component = async (tagName, str, options) => {
 
   const scopedStyle = `
     <style data-peak-component="${tagName}">
-      @layer ${tagName} {
-        ${tagName} {
-          ${style};
-        }
-        ${tagName} [x-scope],
-        ${tagName} [x-scope] * {
-          all: revert-layer;
-        }
+      @scope (${tagName}) to ([x-scope]) {
+        ${style};
       }
     </style>
   `
-  document.head.insertAdjacentHTML('afterbegin', scopedStyle)
+  document.head.insertAdjacentHTML('beforeend', scopedStyle)
 }
 
 class routerView extends HTMLElement {
