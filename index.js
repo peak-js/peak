@@ -7,7 +7,7 @@ const { getComponentHTML, getComponentClass } = window.__peak || {}
 const tags = {}
 const keyedComponents = {}
 
-export const route = {}
+export const route = observable({})
 
 export const router = Object.assign(new EventTarget, {
   _route: route,
@@ -290,9 +290,14 @@ class routerView extends HTMLElement {
     const query = Object.fromEntries(new URLSearchParams(location.search));
     const { tagName, loadingPromise } = route
     await loadingPromise
-    for (let k in router._route) delete router.route[k]
+    for (let k in router._route) delete router._route[k]
     Object.assign(router._route, route, { params, query, path: location.pathname })
-    this.innerHTML = `<${tagName}></${tagName}>`
+    const current = this.firstElementChild
+    if (current && current.tagName.toLowerCase() === tagName) {
+      current.$render()
+    } else {
+      this.innerHTML = `<${tagName}></${tagName}>`
+    }
     router.emit('navigation', { url: window.location.pathname })
   }
   handleClick(e) {
