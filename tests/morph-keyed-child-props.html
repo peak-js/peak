@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js Morph Keyed Child Props Test</title>
+</head>
+<body>
+  <h1>Morph — keyed child prop transfer via &lt;template x-for&gt;</h1>
+  <div id="app">
+    <x-parent></x-parent>
+  </div>
+
+  <script type="module">
+    import { component } from './peak.js'
+
+    await component('x-keyed-child', './components/x-keyed-child.html')
+
+    // Inline parent component — uses <template x-for> with keyed children
+    const parentSrc = `
+      <template>
+        <div>
+          <template x-for="item in this.items">
+            <x-keyed-child
+              :key="item.id"
+              :data="item"
+            />
+          </template>
+          <button id="update-label" @click="this.updateLabel()">Update label of first item</button>
+          <button id="add-extra" @click="this.addExtra()">Add extra to first item</button>
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.items = [
+              { id: 'a', label: 'alpha' },
+              { id: 'b', label: 'beta' },
+              { id: 'c', label: 'gamma' },
+            ]
+          }
+          updateLabel() {
+            this.items[0] = { ...this.items[0], label: 'UPDATED' }
+            this.$render()
+          }
+          addExtra() {
+            this.items[0] = { ...this.items[0], extra: 'EXTRA' }
+            this.$render()
+          }
+        }
+      </` + `script>
+    `
+
+    await component('x-parent', parentSrc)
+  </script>
+</body>
+</html>

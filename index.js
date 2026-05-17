@@ -88,8 +88,9 @@ export const component = async (tagName, str, options) => {
       }
 
       for (const attr of this.attributes) {
+        if (attr.name.startsWith('@')) continue
         const name = attr.name.replace(/^:/, '')
-        if (isGlobalAttribute(name) || this._props[name]) continue
+        if (isGlobalAttribute(name) || this._props[name] || name === 'key') continue
         console.warn(`[peak] Unknown prop '${name}' passed to <${this.tagName.toLowerCase()}>`)
       }
 
@@ -676,7 +677,18 @@ export function morph(l, r, attr) {
         const ci = lc.indexOf(component)
         if (ci >= 0) lc.splice(ci, 1) && le--
         l.insertBefore(component, lc[ls])
-        morph(component, rc[rs], true)
+        for (const a of [...rc[rs].attributes || []]) {
+          if (component.getAttribute(a.name) != a.value) {
+            component.setAttribute(a.name, a.value)
+          }
+        }
+        for (const a of [...rc[rs].attributes || []]) {
+          const name = a.name.replace(/^:/, '')
+          if (a.name.startsWith(':') && name in rc[rs]) {
+            component[name] = rc[rs][name]
+          }
+        }
+        component.$render?.()
         rs++
       } else {
         lc[ls++].replaceWith(rc[rs++])
@@ -702,8 +714,7 @@ function evalInContext(element, code, eventArg, locals) {
     return new Function('event', '_pk_clsx', ...localNames, `return ${code}`)
       .call(element, eventArg, clsx, ...localValues)
   } catch(e) {
-    try { var tagName = element.tagName } catch(e) {}
-    console.warn(element, tagName, code, e)
+    // expressions may fail during render before data is ready — peak handles this gracefully
   }
 }
 

@@ -1,0 +1,17 @@
+<template>
+  <div class="child">
+    <span class="label" x-text="this.data?.label || '?'"></span>
+    <span class="extra" x-if="this.data?.extra" x-text="this.data.extra"></span>
+    <button class="inc" @click="this.count++">+</button>
+    <span class="count" x-text="this.count"></span>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.$prop('data')
+    this.count = 0
+  }
+}
+</script>
