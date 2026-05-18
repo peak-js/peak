@@ -1,0 +1,34 @@
+<template>
+  <div>
+    <h1>X-Else + :prop Bug Test</h1>
+    <div data-testid="status">loaded</div>
+
+    <div data-testid="results">
+      <template x-for="item in this.items" :key="item.id">
+        <div>
+          <div data-testid="true-case" x-if="item.show" x-text="item.name"></div>
+          <x-echo-prop-test data-testid="echo" x-else :name="item.echoName" :value="item.echoValue"></x-echo-prop-test>
+        </div>
+      </template>
+    </div>
+
+    <div data-testid="echo-name" x-text="this.lastEchoName"></div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.items = [
+      { id: 1, show: false, echoName: 'alpha', echoValue: 'one' },
+      { id: 2, show: false, echoName: 'beta',  echoValue: 'two' },
+      { id: 3, show: true,  echoName: 'gamma', echoValue: 'three' },
+    ]
+    this.lastEchoName = 'none'
+  }
+
+  get trueCount() {
+    return this.items.filter(i => i.show).length
+  }
+}
+</script>

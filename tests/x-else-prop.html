@@ -1,0 +1,16 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+component('x-echo-prop-test', '/views/x-echo-for-prop-test.html')
+
+router.route('/x-else-prop.html', '/views/x-else-prop.html')
+
+router.on('navigation', route => console.log('navigation', route))
+router.on('notFound', route => console.log('not-found', route))
+
+</script>

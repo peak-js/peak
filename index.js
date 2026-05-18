@@ -139,7 +139,10 @@ export const component = async (tagName, str, options) => {
       // Check for expression attribute first (e.g., `:name`)
       const exprAttr = this.getAttribute(`:${name}`)
       if (exprAttr !== null) {
-        return evalInContext(this, exprAttr)
+        const value = evalInContext(this, exprAttr)
+        // Fall through to static attribute if expression evaluated to undefined
+        // (e.g. :name inside x-else where x-for locals aren't available yet)
+        if (value !== undefined) return value
       }
 
       // Check for regular attribute
@@ -514,7 +517,7 @@ function render(template, ctx, locals) {
         if (isPeak(el)) {
           el._pending ||= {}
           el._pending[name] = isBoolAttr(el, name) ? true : a.value
-        } else {
+        } else if (!(a.name in el)) {
           el[a.name] = isBoolAttr(el, name) ? true : a.value
         }
       }
@@ -532,7 +535,7 @@ function render(template, ctx, locals) {
           const objId = getObjId(value)
           el.setAttribute(name, `$${objId}`)
         }
-        el[name] = value
+        if (!(name in el)) el[name] = value
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
@@ -824,6 +827,7 @@ function remove(arr, fn) {
   for (let i = arr.length; i--;) fn(arr[i]) && arr.splice(i, 1)
 }
 const elementProperties = Object.getOwnPropertyNames(HTMLElement.prototype).map(x => x.toLowerCase())
+
 const globalAttributes = "accesskey autocapitalize autofocus class contenteditable dir draggable enterkeyhint hidden id inputmode is lang nonce part slot spellcheck style tabindex translate".split(' ');
 
 function isGlobalAttribute(name) {

@@ -1,0 +1,14 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { router } from './peak.js'
+
+router.route('/x-html-svg.html', '/views/x-html-svg.html')
+
+router.on('navigation', route => console.log('navigation', route))
+router.on('notFound', route => console.log('not-found', route))
+
+</script>
