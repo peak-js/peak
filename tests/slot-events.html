@@ -1,0 +1,13 @@
+<link href="style.css" rel="stylesheet">
+
+<x-router-view></x-router-view>
+
+<script type="module">
+
+import { component, router } from './peak.js'
+
+component('x-click-wrapper', '/components/x-click-wrapper.html')
+
+router.route('/slot-events.html', '/views/slot-events.html')
+
+</script>

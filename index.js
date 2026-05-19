@@ -199,17 +199,20 @@ export const component = async (tagName, str, options) => {
     _extractSlots() {
       const slots = {}
       const defaultContent = []
+      const defaultNodes = []
       for (const child of [...this.childNodes]) {
         if (child.nodeType === 1 && child.tagName === 'TEMPLATE' && child.hasAttribute('slot')) {
           const slotName = child.getAttribute('slot')
           slots[slotName] = child.innerHTML
         } else if (child.nodeType === 1 || (child.nodeType === 3 && child.textContent.trim())) {
           defaultContent.push(child.outerHTML || child.textContent)
+          defaultNodes.push(child)
         }
       }
       slots.default = defaultContent.join('')
       this._slotContent = slots.default
       this._namedSlots = slots
+      this._slotNodes = defaultNodes
     }
     _hydrateFromSSR(ssrDataString) {
       try {
@@ -430,6 +433,19 @@ function render(template, ctx, locals) {
     }
     if (el.tagName === 'SLOT') {
       const slotName = el.getAttribute('name') || 'default'
+
+      // Use real nodes for default slot to preserve event contexts
+      if (slotName === 'default' && ctx._slotNodes?.length) {
+        if (el.parentNode) {
+          for (const child of ctx._slotNodes) {
+            el.parentNode.insertBefore(child, el)
+          }
+          el.remove()
+          ctx._slotNodes = null
+        }
+        return el
+      }
+
       let slottedContent = ''
       if (slotName === 'default') {
         slottedContent = ctx._slotContent || ''
@@ -446,7 +462,9 @@ function render(template, ctx, locals) {
           el.remove()
         }
       }
-      return
+      // Always return el so fallback content isn't lost when the
+      // slot has no matching slotted content (moribund check).
+      return el
     }
     if (el.hasAttribute?.('x-for')) {
       const expression = el.getAttribute('x-for')
@@ -597,19 +615,18 @@ function handleEvent(event, eventType) {
     let value = target.getAttribute(`@${eventType}`)
 
     if (value) {
-      let ctx = target.parentElement
-      while (!isPeak(ctx) && ctx !== document) {
-        ctx = ctx.parentElement
-      }
-      ctx.$event = event
-      const locals = entry?.locals
-      try {
-        evalInContext(ctx, value, event, locals)
-        if (event.defaultPrevented || event.cancelBubble) break
-      } catch (err) {
-        console.error(err)
-      } finally {
-        delete ctx.$event
+      const ctx = entry?.ctx
+      if (ctx) {
+        ctx.$event = event
+        const locals = entry.locals
+        try {
+          evalInContext(ctx, value, event, locals)
+          if (event.defaultPrevented || event.cancelBubble) break
+        } catch (err) {
+          console.error(err)
+        } finally {
+          delete ctx.$event
+        }
       }
     }
     target = target.parentElement

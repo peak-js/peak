@@ -1,0 +1,15 @@
+<template>
+  <h1>Slot Events</h1>
+  <x-click-wrapper>
+    <button @click="this.clicked = 'yes'" data-testid="slotted-btn">Click me</button>
+  </x-click-wrapper>
+  <span x-text="this.clicked" data-testid="result">no</span>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.clicked = 'no'
+  }
+}
+</script>
