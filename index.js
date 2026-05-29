@@ -635,6 +635,7 @@ function handleEvent(event, eventType) {
 
 
 export function morph(l, r, attr) {
+  if (l.nodeType === 1 && l.hasAttribute?.('x-ignore')) return
   let ls = 0, rs = 0, le = l.childNodes.length, re = r.childNodes.length
   const lc = [...l.childNodes], rc = [...r.childNodes]
   const content = e => {
@@ -679,6 +680,7 @@ export function morph(l, r, attr) {
     }
     else if (rs == re) {
       //console.log("ROUT")
+      if (lc[ls]?.hasAttribute?.('x-ignore')) { ls++; continue }
       l.removeChild(lc[ls++])
     }
     else if (content(lc[ls]) == content(rc[rs])) {
@@ -715,12 +717,23 @@ export function morph(l, r, attr) {
       }
     }
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
-      //console.log("MORPH")
       render(rc[rs])
-      morph(lc[ls++], rc[rs++], true)
+      morph(lc[ls], rc[rs], true)
+      if (isPeak(lc[ls])) {
+        for (const a of [...rc[rs].attributes || []]) {
+          const name = a.name.replace(/^:/, '')
+          if (a.name.startsWith(':') && name in rc[rs]) {
+            lc[ls][name] = rc[rs][name]
+          }
+        }
+        lc[ls].$render()
+      }
+      ls++
+      rs++
     }
     else {
       //console.log("REPLACE")
+      if (lc[ls]?.hasAttribute?.('x-ignore')) { ls++; rs++; continue }
       lc[ls++].replaceWith(rc[rs++])
     }
   }
@@ -815,6 +828,7 @@ function clsxToVal(mix) {
 }
 
 function getObjId(o) {
+  if (o == null) return 'nil'
   o = o.__target__ || o
   if (!objs.has(o)) objs.set(o, rand())
   return objs.get(o)
