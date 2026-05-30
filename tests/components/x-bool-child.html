@@ -1,0 +1,26 @@
+<template>
+  <div class="child">
+    <p>Label: <span id="label" x-text="this.label"></span></p>
+    <div class="active-content" x-if="this.isActive">
+      <span id="active-indicator">ACTIVE</span>
+    </div>
+    <div class="inactive-content" x-if="!this.isActive">
+      <span id="inactive-indicator">INACTIVE</span>
+    </div>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.isActive = this.$prop('is-active')
+    this.label = this.$prop('label')
+  }
+}
+</script>
+
+<style>
+  .child { border: 1px solid #ccc; padding: 8px; margin: 8px 0; }
+  .active-content { color: green; }
+  .inactive-content { color: red; }
+</style>

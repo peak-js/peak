@@ -1,15 +1,13 @@
 <template>
-  <span data-testid="echo-name" x-text="this._name"></span>
-  <span data-testid="echo-value" x-text="this._value"></span>
+  <span data-testid="echo-name" x-text="this.name"></span>
+  <span data-testid="echo-value" x-text="this.value"></span>
 </template>
 
 <script>
 export default class {
   initialize() {
-    // Store $prop results in separate properties — these won't get
-    // overwritten by the render function's later el.name = ... assignment.
-    this._name = this.$prop('name') || ''
-    this._value = this.$prop('value') || ''
+    this.name = this.$prop('name')
+    this.value = this.$prop('value')
   }
 }
 </script>

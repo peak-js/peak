@@ -65,7 +65,11 @@ export const component = async (tagName, str, options) => {
       instances[this._pk] = this
       this._state = Object.create(null)
       this._props = {}
-      this._pending = {}
+      // Preserve _pending set by _render (which runs on the template clone
+      // before upgrade).  This lets $prop resolvers read the values that
+      // :expr bindings evaluated to, rather than falling back to getAttribute()
+      // which stringifies everything (making "false" truthy).
+      if (!this._pending) this._pending = {}
       this._watchers = []
       this._template = template.cloneNode(true)
       this._promise = this.initialize?.()
@@ -77,7 +81,12 @@ export const component = async (tagName, str, options) => {
     }
     _observe() {
       for (const key of Object.keys(this)) {
-        this._defineObservableProperty(key, this[key])
+        const val = this[key]
+        if (val instanceof LiveProp) {
+          this._defineObservableProperty(key, val, val._attr, val._default)
+        } else {
+          this._defineObservableProperty(key, val)
+        }
       }
     }
     async connectedCallback() {
@@ -90,7 +99,7 @@ export const component = async (tagName, str, options) => {
       for (const attr of this.attributes) {
         if (attr.name.startsWith('@')) continue
         const name = attr.name.replace(/^:/, '')
-        if (isGlobalAttribute(name) || this._props[name] || name === 'key') continue
+        if (isGlobalAttribute(name) || this._props.hasOwnProperty(name) || name === 'key') continue
         console.warn(`[peak] Unknown prop '${name}' passed to <${this.tagName.toLowerCase()}>`)
       }
 
@@ -133,30 +142,9 @@ export const component = async (tagName, str, options) => {
     $emit(eventType, detail) {
       this.dispatchEvent(new CustomEvent(eventType, { detail, bubbles: true }))
     }
-    $prop(name) {
+    $prop(name, defaultValue) {
       this._props[name] = true
-
-      // Check for expression attribute first (e.g., `:name`)
-      const exprAttr = this.getAttribute(`:${name}`)
-      if (exprAttr !== null) {
-        const value = evalInContext(this, exprAttr)
-        // Fall through to static attribute if expression evaluated to undefined
-        // (e.g. :name inside x-else where x-for locals aren't available yet)
-        if (value !== undefined) return value
-      }
-
-      // Check for regular attribute
-      const attr = this.getAttribute(name)
-      if (attr !== null) {
-        return isBoolAttr(this, name) ? true : attr
-      }
-
-      if (this._pending && this._pending.hasOwnProperty(name)) {
-        const value = this._pending[name]
-        delete this._pending[name]
-        this[name] = value
-        return value
-      }
+      return new LiveProp(name, defaultValue)
     }
     $on(eventType, handler) {
       this.addEventListener(eventType, handler)
@@ -245,18 +233,34 @@ export const component = async (tagName, str, options) => {
         console.warn('[peak] Failed to hydrate from SSR data:', e)
       }
     }
-    _defineObservableProperty(prop, initialValue) {
+    _resolveProp(attr, def) {
+      if (this._pending && this._pending.hasOwnProperty(attr)) {
+        const v = this._pending[attr]
+        delete this._pending[attr]
+        return v
+      }
+      const v = this.getAttribute(attr)
+      return v !== null ? (isBoolAttr(this, attr) ? true : v) : def
+    }
+    _defineObservableProperty(prop, initialValue, attr, def) {
       if ((prop in this._state) || prop.startsWith('_') || prop.startsWith('$')) return
+      this._state[prop] = true
+      const path = `${this.tagName}/${this._pk}/${attr || prop}`
 
-      this._state[prop] = observable(initialValue)
-      const path = `${this.tagName}/${this._pk}/${prop}`
-
-      Object.defineProperty(this, prop, {
-        configurable: true,
-        enumerable: true,
-        get: () => dep(path) && this._state[prop],
-        set: (val) => notify(path) || (this._state[prop] = val)
-      })
+      if (attr !== undefined) {
+        Object.defineProperty(this, prop, {
+          configurable: true, enumerable: true,
+          get: () => { dep(path); let v = this._props[attr]; if (v === true) this._props[attr] = v = this._resolveProp(attr, def); return v },
+          set: (v) => { notify(path); this._props[attr] = v }
+        })
+      } else {
+        this._state[prop] = observable(initialValue)
+        Object.defineProperty(this, prop, {
+          configurable: true, enumerable: true,
+          get: () => dep(path) && this._state[prop],
+          set: (val) => notify(path) || (this._state[prop] = val)
+        })
+      }
     }
   }
 
@@ -554,6 +558,13 @@ function render(template, ctx, locals) {
           el.setAttribute(name, `$${objId}`)
         }
         if (!(name in el)) el[name] = value
+        if (isPeak(el) && el._props) el._props[name] = value
+        // For :expr bindings, also set _pending so the child component's
+        // $prop resolver can read the correct JS value before morph runs.
+        if (isPeak(el)) {
+          el._pending ||= {}
+          el._pending[name] = value
+        }
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
@@ -705,9 +716,11 @@ export function morph(l, r, attr) {
           }
         }
         for (const a of [...rc[rs].attributes || []]) {
-          const name = a.name.replace(/^:/, '')
-          if (a.name.startsWith(':') && name in rc[rs]) {
+          const name = a.name
+          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+          if (name in rc[rs]) {
             component[name] = rc[rs][name]
+            if (component._props) component._props[name] = rc[rs][name]
           }
         }
         component.$render?.()
@@ -721,9 +734,11 @@ export function morph(l, r, attr) {
       morph(lc[ls], rc[rs], true)
       if (isPeak(lc[ls])) {
         for (const a of [...rc[rs].attributes || []]) {
-          const name = a.name.replace(/^:/, '')
-          if (a.name.startsWith(':') && name in rc[rs]) {
+          const name = a.name
+          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+          if (name in rc[rs]) {
             lc[ls][name] = rc[rs][name]
+            if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
           }
         }
         lc[ls].$render()
@@ -769,6 +784,10 @@ function dep(path) {
   }
 }
 
+class LiveProp {
+  constructor(attr, def) { this._attr = attr; this._default = def }
+}
+
 export function observable(x, path = rand()) {
   if ((typeof x != 'object' || x === null) && dep(path)) return x
   return new Proxy(x, {
@@ -777,7 +796,9 @@ export function observable(x, path = rand()) {
     },
     get(x, key) {
       return x.__target__ ? x[key]
-        : typeof key == "symbol" ? Reflect.get(...arguments)
+        : typeof key == "symbol" ? (x instanceof Map || x instanceof Set ? x[key] : Reflect.get(...arguments))
+        : (x instanceof Map || x instanceof Set) ?
+          (typeof x[key] === 'function' ? (...args) => x[key].apply(x, args) : x[key])
         : (key in x.constructor.prototype && dep(path + '/' + key)) ? x[key]
         : (key == '__target__') ? x
         : observable(x[key], path + '/' + key)

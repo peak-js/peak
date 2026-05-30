@@ -1,0 +1,16 @@
+<template>
+  <div class="unkeyed-child" :style="'border: 2px solid ' + (this.accentColor || '#888') + '; padding: 1rem; margin: 0.5rem 0'">
+    <p class="label">Accent: <span class="accent" x-text="this.accentColor || 'none'"></span></p>
+    <p class="own-state">Own count: <span class="count" x-text="this.count"></span></p>
+    <button class="inc-btn" @click="this.count++">Increment</button>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.accentColor = this.$prop('accent-color')
+    this.count = 0
+  }
+}
+</script>

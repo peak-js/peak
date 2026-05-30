@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js Boolean Prop Coercion Test</title>
+</head>
+<body>
+  <h1>Boolean :prop Binding Test</h1>
+  <div id="app">
+    <x-bool-parent></x-bool-parent>
+  </div>
+
+  <script type="module">
+    import { component } from './peak.js'
+
+    await component('x-bool-child', './components/x-bool-child.html')
+
+    const parentSrc = `
+      <template>
+        <div class="parent">
+          <p>Parent: active = <span id="active-val" x-text="this.active"></span></p>
+          <button id="toggle" @click="this.toggle()">Toggle</button>
+          <x-bool-child
+            :is-active="this.active"
+            :label="this.label"
+          ></x-bool-child>
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.active = false
+            this.label = 'Hello'
+          }
+          toggle() {
+            this.active = !this.active
+          }
+        }
+      </` + `script>
+    `
+    component('x-bool-parent', parentSrc)
+  </script>
+</body>
+</html>

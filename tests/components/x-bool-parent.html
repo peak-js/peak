@@ -1,0 +1,26 @@
+<template>
+  <div class="parent">
+    <p>Parent: active = <span id="active-val" x-text="this.active"></span></p>
+    <button id="toggle" @click="this.toggle()">Toggle</button>
+    <x-bool-child
+      :is-active="this.active"
+      :label="this.label"
+    ></x-bool-child>
+  </div>
+</template>
+
+<script>
+export default class {
+  initialize() {
+    this.active = false
+    this.label = 'Hello'
+  }
+  toggle() {
+    this.active = !this.active
+  }
+}
+</script>
+
+<style>
+  .parent { padding: 16px; }
+</style>

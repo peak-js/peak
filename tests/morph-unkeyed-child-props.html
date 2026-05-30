@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js Morph Unkeyed Child Props Test</title>
+</head>
+<body>
+  <h1>Morph — unkeyed child prop transfer</h1>
+  <div id="app">
+    <x-parent></x-parent>
+  </div>
+
+  <script type="module">
+    import { component } from './peak.js'
+
+    await component('x-unkeyed-child', './components/x-unkeyed-child.html')
+
+    const parentSrc = `
+      <template>
+        <div>
+          <x-unkeyed-child
+            :accent-color="this.color"
+          />
+          <p class="parent-color">Parent color: <span x-text="this.color"></span></p>
+          <button id="set-red" @click="this.setColor('red')">Red</button>
+          <button id="set-blue" @click="this.setColor('blue')">Blue</button>
+          <button id="set-green" @click="this.setColor('green')">Green</button>
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.color = 'red'
+          }
+          setColor(c) {
+            this.color = c
+          }
+        }
+      <\/script>
+    `
+
+    await component('x-parent', parentSrc)
+  </script>
+</body>
+</html>
