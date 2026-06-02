@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js Slot Re-render Test</title>
+</head>
+<body>
+  <h1>Slot re-render</h1>
+  <div id="app">
+    <x-slot-parent></x-slot-parent>
+  </div>
+
+  <script type="module">
+    import { component } from './peak.js'
+
+    await component('x-slot-child', './components/x-slot-child.html')
+
+    const parentSrc = `
+      <template>
+        <div>
+          <x-slot-child>
+            <span class="marker" x-if="this.showA">A</span>
+            <span class="marker" x-if="!this.showA">B</span>
+          </x-slot-child>
+          <button id="toggle" @click="this.showA = !this.showA">Toggle</button>
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.showA = true
+          }
+        }
+      <\/script>
+    `
+
+    await component('x-slot-parent', parentSrc)
+  </script>
+</body>
+</html>

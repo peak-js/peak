@@ -176,6 +176,12 @@ export const component = async (tagName, str, options) => {
       this._extractSlots()
       const rendered = render(template, this)
       morph(this, rendered)
+      // Populate $refs from the live DOM (morph may have swapped elements)
+      const refs = {}
+      for (const el of this.querySelectorAll('[x-ref]')) {
+        refs[el.getAttribute('x-ref')] = el
+      }
+      this.$refs = refs
       _contextId = null
     }
     $compose(composable) {
@@ -185,6 +191,11 @@ export const component = async (tagName, str, options) => {
       return route
     }
     _extractSlots() {
+      // Slot content is cached on first extraction. Subsequent $render()
+      // calls reuse the cache unless morph marked it stale (children changed).
+      if (this._slotsCached && !this._slotsStale) return
+      this._slotsStale = false
+
       const slots = {}
       const defaultContent = []
       const defaultNodes = []
@@ -201,6 +212,7 @@ export const component = async (tagName, str, options) => {
       this._slotContent = slots.default
       this._namedSlots = slots
       this._slotNodes = defaultNodes
+      this._slotsCached = true
     }
     _hydrateFromSSR(ssrDataString) {
       try {
@@ -445,7 +457,6 @@ function render(template, ctx, locals) {
             el.parentNode.insertBefore(child, el)
           }
           el.remove()
-          ctx._slotNodes = null
         }
         return el
       }
@@ -741,6 +752,7 @@ export function morph(l, r, attr) {
             if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
           }
         }
+        lc[ls]._slotsStale = true
         lc[ls].$render()
       }
       ls++
