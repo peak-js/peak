@@ -2,7 +2,6 @@ const parser = new DOMParser
 const contexts = new WeakMap
 const handlers = {}
 const instances = {}
-const objs = new WeakMap
 const { getComponentHTML, getComponentClass } = window.__peak || {}
 const tags = {}
 const keyedComponents = {}
@@ -491,18 +490,19 @@ function render(template, ctx, locals) {
       const [, itemName, itemsExpr] = match
       const items = evalInContext(ctx, itemsExpr, undefined, locals)
 
+      const sourceTemplate = document.createElement('template')
+      if (el.tagName == 'TEMPLATE') {
+        sourceTemplate.innerHTML = el.innerHTML
+      } else {
+        sourceTemplate.innerHTML = el.outerHTML
+        sourceTemplate.content.children[0].removeAttribute('x-for')
+      }
+
       const fragment = document.createDocumentFragment()
 
       for (const [index, item] of (items || []).entries()) {
-        const clone = document.createElement('template')
-        if (el.tagName == 'TEMPLATE') {
-          clone.innerHTML = el.innerHTML
-        } else {
-          clone.innerHTML = el.outerHTML
-          clone.content.children[0].removeAttribute('x-for')
-        }
         const itemLocals = Object.assign({}, locals, { [itemName]: item, index })
-        const rendered = render(clone.content, ctx, itemLocals)
+        const rendered = render(sourceTemplate.content, ctx, itemLocals)
         for (const c of rendered.children) {
           fragment.append(c)
         }
@@ -565,8 +565,7 @@ function render(template, ctx, locals) {
           }
           el.setAttribute(name, value)
         } else {
-          const objId = getObjId(value)
-          el.setAttribute(name, `$${objId}`)
+          el.setAttribute(name, '$[obj]')
         }
         if (!(name in el)) el[name] = value
         if (isPeak(el) && el._props) el._props[name] = value
@@ -582,6 +581,17 @@ function render(template, ctx, locals) {
         listen(eventName, el, ctx, locals)
       }
     }
+    // Track which attribute names the template explicitly manages,
+    // so morph can preserve browser-managed attributes (e.g. popover `open`).
+    if (el.nodeType === 1) {
+      const managedAttrs = []
+      for (const a of attrs) {
+        if (a.name.startsWith('@') || a.name.startsWith('x-') || a.name === 'data-peak-attrs') continue
+        managedAttrs.push(a.name.startsWith(':') ? a.name.replace(/^:/, '') : a.name)
+      }
+      el.setAttribute('data-peak-attrs', managedAttrs.join(' '))
+    }
+
     const moribund = []
     const _state = {}
     for (const c of [...el.children]) {
@@ -663,7 +673,7 @@ export function morph(l, r, attr) {
   const content = e => {
     if (e.nodeType == 3) return e.textContent
     if (isPeak(e)) {
-      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope').map(x => `${x.name}=${x.value}`).join(' ')} />`
+      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope' && x.name != 'data-peak-attrs').map(x => `${x.name}=${x.value}`).join(' ')} />`
     }
     return e.outerHTML
   }
@@ -682,6 +692,12 @@ export function morph(l, r, attr) {
 
     for (const a of [...l.attributes || []]) {
       if (!r.hasAttribute(a.name)) {
+        // Preserve attributes that aren't managed by peak (e.g. browser-set `open` on popovers)
+        if (a.name === 'data-peak-attrs') continue
+        if (r.hasAttribute('data-peak-attrs')) {
+          const managedAttrs = r.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+          if (!managedAttrs.includes(a.name)) continue
+        }
         l.removeAttribute(a.name)
         if (isBoolAttr(l, a.name)) l[a.name] = false
       }
@@ -705,12 +721,37 @@ export function morph(l, r, attr) {
       if (lc[ls]?.hasAttribute?.('x-ignore')) { ls++; continue }
       l.removeChild(lc[ls++])
     }
-    else if (content(lc[ls]) == content(rc[rs])) {
+    else if (content(lc[ls]) == content(rc[rs]) && !(isPeak(lc[ls]) && rc[rs].children.length)) {
       //console.log("CMATCH")
+      // Copy props even on content match so children receive updated
+      // data/objects. The $prop setter triggers $defer() which schedules
+      // an async $render() only if the value actually changed.
+      if (isPeak(lc[ls]) && isPeak(rc[rs])) {
+        for (const a of [...rc[rs].attributes || []]) {
+          const name = a.name
+          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+          if (name in rc[rs]) {
+            lc[ls][name] = rc[rs][name]
+            if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
+          }
+        }
+        lc[ls]._slotsStale = true
+      }
       ls++ & rs++
     }
-    else if (content(lc[le - 1]) == content(rc[re - 1])) {
+    else if (content(lc[le - 1]) == content(rc[re - 1]) && !(isPeak(lc[le - 1]) && rc[re - 1].children.length)) {
       //console.log("CMATCH REVERSE")
+      if (isPeak(lc[le - 1]) && isPeak(rc[re - 1])) {
+        for (const a of [...rc[re - 1].attributes || []]) {
+          const name = a.name
+          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+          if (name in rc[re - 1]) {
+            lc[le - 1][name] = rc[re - 1][name]
+            if (lc[le - 1]._props) lc[le - 1]._props[name] = rc[re - 1][name]
+          }
+        }
+        lc[le - 1]._slotsStale = true
+      }
       le-- & re--
     }
     else if (rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
@@ -721,20 +762,28 @@ export function morph(l, r, attr) {
         const ci = lc.indexOf(component)
         if (ci >= 0) lc.splice(ci, 1) && le--
         l.insertBefore(component, lc[ls])
+        let propsChanged = false
         for (const a of [...rc[rs].attributes || []]) {
           if (component.getAttribute(a.name) != a.value) {
             component.setAttribute(a.name, a.value)
+            propsChanged = true
           }
         }
         for (const a of [...rc[rs].attributes || []]) {
           const name = a.name
           if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
           if (name in rc[rs]) {
+            if (component[name] !== rc[rs][name]) propsChanged = true
             component[name] = rc[rs][name]
             if (component._props) component._props[name] = rc[rs][name]
           }
         }
-        component.$render?.()
+        if (propsChanged || component._slotsStale) {
+          component.$render?.()
+        } else {
+          component._slotsStale = true
+          component.$render?.()
+        }
         rs++
       } else {
         lc[ls++].replaceWith(rc[rs++])
@@ -744,16 +793,23 @@ export function morph(l, r, attr) {
       render(rc[rs])
       morph(lc[ls], rc[rs], true)
       if (isPeak(lc[ls])) {
+        let propsChanged = false
         for (const a of [...rc[rs].attributes || []]) {
           const name = a.name
           if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
           if (name in rc[rs]) {
+            if (lc[ls][name] !== rc[rs][name]) propsChanged = true
             lc[ls][name] = rc[rs][name]
             if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
           }
         }
-        lc[ls]._slotsStale = true
-        lc[ls].$render()
+        if (propsChanged || lc[ls]._slotsStale) {
+          lc[ls]._slotsStale = true
+          lc[ls].$render()
+        } else {
+          lc[ls]._slotsStale = true
+          lc[ls].$render()
+        }
       }
       ls++
       rs++
@@ -766,13 +822,32 @@ export function morph(l, r, attr) {
   }
 }
 
+const _compiledFns = {}
+let _compiledFnCount = 0
+
 function evalInContext(element, code, eventArg, locals) {
   const localNames = locals ? Object.keys(locals) : []
   const localValues = locals ? Object.values(locals) : []
 
+  // Cache compiled functions by expression code + local names to avoid
+  // the expensive new Function() compilation on every x-for iteration.
+  const cacheKey = code + '\x00' + localNames.join(',')
+  let fn = _compiledFns[cacheKey]
+  if (!fn) {
+    fn = new Function('event', '_pk_clsx', ...localNames, `return ${code}`)
+    _compiledFns[cacheKey] = fn
+    _compiledFnCount++
+    // Prune cache if it grows too large (unlikely but safe)
+    if (_compiledFnCount > 5000) {
+      for (const k in _compiledFns) delete _compiledFns[k]
+      _compiledFnCount = 0
+      _compiledFns[cacheKey] = fn
+      _compiledFnCount = 1
+    }
+  }
+
   try {
-    return new Function('event', '_pk_clsx', ...localNames, `return ${code}`)
-      .call(element, eventArg, clsx, ...localValues)
+    return fn.call(element, eventArg, clsx, ...localValues)
   } catch(e) {
     // expressions may fail during render before data is ready — peak handles this gracefully
   }
@@ -858,13 +933,6 @@ function clsxToVal(mix) {
   }
 
   return str;
-}
-
-function getObjId(o) {
-  if (o == null) return 'nil'
-  o = o.__target__ || o
-  if (!objs.has(o)) objs.set(o, rand())
-  return objs.get(o)
 }
 
 function rand() {

@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js — no unnecessary synchronous child renders</title>
+</head>
+<body>
+  <h1>Perf: 100 keyed children, no unnecessary synchronous $render()</h1>
+  <div id="app">
+    <x-perf-parent></x-perf-parent>
+  </div>
+
+  <script type="module">
+    import { component } from './peak.js'
+
+    // Child that tracks synchronous $render() count on window._perfRenderCount.
+    // It wraps the prototype $render so that count increments happen during
+    // the parent morph (synchronous) but NOT for deferred rAF renders — those
+    // fire later and are outside the test's measurement window.
+    const childSrc = `
+      <template>
+        <div class="child">
+          <span class="label" x-text="this.data.label" />
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.data = this.$prop('data')
+            const proto = Object.getPrototypeOf(this)
+            const orig = proto.$render.bind(this)
+            this.$render = function() {
+              window._perfRenderCount = (window._perfRenderCount || 0) + 1
+              return orig()
+            }
+          }
+        }
+      <\/script>
+    `
+
+    await component('x-perf-child', childSrc)
+
+    // Parent with 100 keyed children via <template x-for>
+    const parentSrc = `
+      <template>
+        <div>
+          <template x-for="item in this.items">
+            <x-perf-child :key="item.id" :data="item" />
+          </template>
+          <button id="noop-render" @click="this.noopRender()">
+            No-op re-render
+          </button>
+          <button id="update-first" @click="this.updateFirst()">
+            Update first item label
+          </button>
+          <button id="add-item" @click="this.addItem()">
+            Add 101st item
+          </button>
+        </div>
+      </template>
+      <script>
+        export default class {
+          initialize() {
+            this.items = Array.from({ length: 100 }, (_, i) => ({
+              id: 'item-' + i,
+              label: 'Item ' + i,
+            }))
+          }
+          noopRender() {
+            this.$render()
+          }
+          updateFirst() {
+            this.items[0] = { ...this.items[0], label: 'UPDATED' }
+            this.$render()
+          }
+          addItem() {
+            this.items = [
+              ...this.items,
+              { id: 'item-100', label: 'Item 100' },
+            ]
+            this.$render()
+          }
+        }
+      <\/script>
+    `
+
+    await component('x-perf-parent', parentSrc)
+  </script>
+</body>
+</html>
