@@ -81,6 +81,8 @@ export const component = async (tagName, str, options) => {
     }
     _observe() {
       for (const key of Object.keys(this)) {
+        // Skip properties already resolved by the parent's template (:bindings)
+        if (this._props[key] !== undefined && this._props[key] !== true) continue
         const val = this[key]
         if (val instanceof LiveProp) {
           this._defineObservableProperty(key, val, val._attr, val._default)
@@ -762,19 +764,31 @@ export function morph(l, r, attr) {
       const component = keyedComponents[keyId]
       if (component) {
         const ci = lc.indexOf(component)
-        if (ci >= 0) lc.splice(ci, 1) && le--
-        l.insertBefore(component, lc[ls])
-        let propsChanged = false
+        if (ci >= 0 && ci !== ls) { lc.splice(ci, 1); le--; l.insertBefore(component, lc[ls]) }
+        // Always copy host-level attributes (class, etc.)
         for (const a of [...rc[rs].attributes || []]) {
           if (component.getAttribute(a.name) != a.value) {
             component.setAttribute(a.name, a.value)
-            propsChanged = true
           }
         }
+        for (const a of [...rc[rs].attributes || []]) {
+          if (!rc[rs].hasAttribute(a.name)) {
+            if (a.name === 'data-peak-attrs') continue
+            if (rc[rs].hasAttribute('data-peak-attrs')) {
+              const managedAttrs = rc[rs].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+              if (!managedAttrs.includes(a.name)) continue
+            }
+            component.removeAttribute(a.name)
+          }
+        }
+        // Only re-render if actual reactive props changed
+        let propsChanged = false
         for (const a of [...rc[rs].attributes || []]) {
           const name = a.name
           if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
           if (name in rc[rs]) {
+            // class is managed by the parent template, not a child-reactive prop
+            if (name === 'class') continue
             if (component[name] !== rc[rs][name]) propsChanged = true
             component[name] = rc[rs][name]
             if (component._props) component._props[name] = rc[rs][name]
@@ -784,6 +798,7 @@ export function morph(l, r, attr) {
           component.$render?.()
         } else {
           component._slotsStale = true
+          if (component._hasSlots) component.$render?.()
         }
         rs++
         ls++
@@ -793,31 +808,55 @@ export function morph(l, r, attr) {
     }
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       render(rc[rs])
-      morph(lc[ls], rc[rs], true)
+
+      // Always copy host-level attributes (class, etc.)
+      for (const a of [...rc[rs].attributes || []]) {
+        if (lc[ls].getAttribute(a.name) != a.value) {
+          lc[ls].setAttribute(a.name, a.value)
+          if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = a.value
+        }
+      }
+      for (const a of [...lc[ls].attributes || []]) {
+        if (!rc[rs].hasAttribute(a.name)) {
+          if (a.name === 'data-peak-attrs') continue
+          if (rc[rs].hasAttribute('data-peak-attrs')) {
+            const managedAttrs = rc[rs].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+            if (!managedAttrs.includes(a.name)) continue
+          }
+          lc[ls].removeAttribute(a.name)
+          if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = false
+        }
+      }
+
       if (isPeak(lc[ls])) {
         let propsChanged = false
         for (const a of [...rc[rs].attributes || []]) {
           const name = a.name
           if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
           if (name in rc[rs]) {
+            // class is managed by the parent template, not a child-reactive prop
+            if (name === 'class') continue
             if (lc[ls][name] !== rc[rs][name]) propsChanged = true
             lc[ls][name] = rc[rs][name]
             if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
           }
         }
         if (propsChanged || lc[ls]._slotsStale) {
+          morph(lc[ls], rc[rs])
           lc[ls]._slotsStale = true
           lc[ls].$render()
         } else {
+          morph(lc[ls], rc[rs])
           lc[ls]._slotsStale = true
           if (lc[ls]._hasSlots) lc[ls].$render()
         }
+      } else {
+        morph(lc[ls], rc[rs])
       }
       ls++
       rs++
     }
     else {
-      //console.log("REPLACE")
       if (lc[ls]?.hasAttribute?.('x-ignore')) { ls++; rs++; continue }
       lc[ls++].replaceWith(rc[rs++])
     }
