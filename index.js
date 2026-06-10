@@ -63,6 +63,7 @@ export const component = async (tagName, str, options) => {
       this._pk = rand()
       instances[this._pk] = this
       this._state = Object.create(null)
+      this._hasSlots = false
       this._props = {}
       // Preserve _pending set by _render (which runs on the template clone
       // before upgrade).  This lets $prop resolvers read the values that
@@ -262,14 +263,14 @@ export const component = async (tagName, str, options) => {
         Object.defineProperty(this, prop, {
           configurable: true, enumerable: true,
           get: () => { dep(path); let v = this._props[attr]; if (v === true) this._props[attr] = v = this._resolveProp(attr, def); return v },
-          set: (v) => { notify(path); this._props[attr] = v }
+          set: (v) => { if (this._props[attr] === v) return; notify(path); this._props[attr] = v }
         })
       } else {
         this._state[prop] = observable(initialValue)
         Object.defineProperty(this, prop, {
           configurable: true, enumerable: true,
           get: () => dep(path) && this._state[prop],
-          set: (val) => notify(path) || (this._state[prop] = val)
+          set: (val) => { if (this._state[prop] === val) return; notify(path) || (this._state[prop] = val) }
         })
       }
     }
@@ -447,6 +448,7 @@ function render(template, ctx, locals) {
       }
     }
     if (el.tagName === 'SLOT') {
+      ctx._hasSlots = true
       const slotName = el.getAttribute('name') || 'default'
 
       // Use real nodes for default slot to preserve event contexts
@@ -782,9 +784,9 @@ export function morph(l, r, attr) {
           component.$render?.()
         } else {
           component._slotsStale = true
-          component.$render?.()
         }
         rs++
+        ls++
       } else {
         lc[ls++].replaceWith(rc[rs++])
       }
@@ -808,7 +810,7 @@ export function morph(l, r, attr) {
           lc[ls].$render()
         } else {
           lc[ls]._slotsStale = true
-          lc[ls].$render()
+          if (lc[ls]._hasSlots) lc[ls].$render()
         }
       }
       ls++
@@ -875,22 +877,31 @@ class LiveProp {
   constructor(attr, def) { this._attr = attr; this._default = def }
 }
 
+var _obsCache
+
 export function observable(x, path = rand()) {
   if ((typeof x != 'object' || x === null) && dep(path)) return x
-  return new Proxy(x, {
-    set(x, key) {
-      return notify(path + '/' + key) || Reflect.set(...arguments)
-    },
-    get(x, key) {
-      return x.__target__ ? x[key]
-        : typeof key == "symbol" ? (x instanceof Map || x instanceof Set ? x[key] : Reflect.get(...arguments))
-        : (x instanceof Map || x instanceof Set) ?
-          (typeof x[key] === 'function' ? (...args) => x[key].apply(x, args) : x[key])
-        : (key in x.constructor.prototype && dep(path + '/' + key)) ? x[key]
-        : (key == '__target__') ? x
-        : observable(x[key], path + '/' + key)
-    }
-  });
+  _obsCache || (_obsCache = new WeakMap())
+  let proxy = _obsCache.get(x)
+  if (!proxy) {
+    proxy = new Proxy(x, {
+      set(x, key, value) {
+        if (x[key] === value) return true
+        return notify(path + '/' + key) || Reflect.set(...arguments)
+      },
+      get(x, key) {
+        return x.__target__ ? x[key]
+          : typeof key == "symbol" ? (x instanceof Map || x instanceof Set ? x[key] : Reflect.get(...arguments))
+          : (x instanceof Map || x instanceof Set) ?
+            (typeof x[key] === 'function' ? (...args) => x[key].apply(x, args) : x[key])
+          : (key in x.constructor.prototype && dep(path + '/' + key)) ? x[key]
+          : (key == '__target__') ? x
+          : observable(x[key], path + '/' + key)
+      }
+    });
+    _obsCache.set(x, proxy)
+  }
+  return proxy
 }
 
 function clsx() {
