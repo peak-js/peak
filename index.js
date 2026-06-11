@@ -702,32 +702,67 @@ export function morph(l, r, attr) {
   const compat = e => isPeak(e) ? `${e.tagName}:${e.getAttribute('key')}` : e.tagName
   const render = e => isPeak(e) && customElements.upgrade(e) || e.$render?.()
 
-  if (attr) {
-    // Snapshot old managed attributes before the copy loop overwrites
-    // the live element.  null means the element isn't peak-managed.
-    const oldManaged = _managedAttrs?.get(l) ?? null
-    for (const a of [...r.attributes || []]) {
-      if (l.getAttribute(a.name) != a.value) {
-        l.setAttribute(a.name, a.value)
-        if (isBoolAttr(l, a.name)) l[a.name] = true
-      }
-    }
-    // Transfer the managed-attribute set from the rendered element
-    // to the live element for the next morph cycle.
-    if (_managedAttrs) {
-      const next = _managedAttrs.get(r)
-      if (next) _managedAttrs.set(l, next)
-      else _managedAttrs.delete(l)
-    }
+  // -- helpers ----------------------------------------------------------
 
-    for (const a of [...l.attributes || []]) {
-      if (!r.hasAttribute(a.name)) {
-        // Preserve attributes that aren't managed by peak (e.g. browser-set `open` on popovers)
-        if (oldManaged && !oldManaged.has(a.name)) continue
-        l.removeAttribute(a.name)
-        if (isBoolAttr(l, a.name)) l[a.name] = false
+  // Copy reactive props from rendered to live (CMATCH fast path).
+  const copyProps = (live, rendered) => {
+    if (!isPeak(live) || !isPeak(rendered)) return
+    for (const a of [...rendered.attributes || []]) {
+      const name = a.name
+      if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+      if (name in rendered) {
+        live[name] = rendered[name]
+        if (live._props) live._props[name] = rendered[name]
       }
     }
+    live._slotsStale = true
+  }
+
+  // Sync host-level attributes from rendered to live, preserving
+  // attributes not managed by peak (e.g. browser-set `open` on popovers).
+  const syncAttrs = (live, rendered, boolAttrs) => {
+    const oldManaged = _managedAttrs?.get(live) ?? null
+    for (const a of [...rendered.attributes || []]) {
+      if (live.getAttribute(a.name) != a.value) {
+        live.setAttribute(a.name, a.value)
+        if (boolAttrs && isBoolAttr(live, a.name)) live[a.name] = a.value
+      }
+    }
+    if (_managedAttrs) {
+      const next = _managedAttrs.get(rendered)
+      if (next) _managedAttrs.set(live, next)
+      else _managedAttrs.delete(live)
+    }
+    for (const a of [...live.attributes || []]) {
+      if (!rendered.hasAttribute(a.name)) {
+        if (oldManaged && !oldManaged.has(a.name)) continue
+        live.removeAttribute(a.name)
+        if (boolAttrs && isBoolAttr(live, a.name)) live[a.name] = false
+      }
+    }
+  }
+
+  // Copy reactive props from rendered to live, returning true when
+  // any prop reference actually changed (excludes `class`).
+  const syncProps = (live, rendered) => {
+    let changed = false
+    for (const a of [...rendered.attributes || []]) {
+      const name = a.name
+      if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
+      if (name === 'class') continue
+      if (name in rendered) {
+        if (live[name] !== rendered[name]) changed = true
+        live[name] = rendered[name]
+        if (live._props) live._props[name] = rendered[name]
+      }
+    }
+    return changed
+  }
+
+  // -------------------------------------------------------------------
+
+  if (attr) {
+    syncAttrs(l, r, true)
   }
 
   while (ls < le || rs < re) {
@@ -748,79 +783,21 @@ export function morph(l, r, attr) {
       l.removeChild(lc[ls++])
     }
     else if (content(lc[ls]) == content(rc[rs]) && !(isPeak(lc[ls]) && rc[rs].children.length)) {
-      //console.log("CMATCH")
-      // Copy props even on content match so children receive updated
-      // data/objects. The $prop setter triggers $defer() which schedules
-      // an async $render() only if the value actually changed.
-      if (isPeak(lc[ls]) && isPeak(rc[rs])) {
-        for (const a of [...rc[rs].attributes || []]) {
-          const name = a.name
-          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
-          if (name in rc[rs]) {
-            lc[ls][name] = rc[rs][name]
-            if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
-          }
-        }
-        lc[ls]._slotsStale = true
-      }
+      copyProps(lc[ls], rc[rs])
       ls++ & rs++
     }
     else if (content(lc[le - 1]) == content(rc[re - 1]) && !(isPeak(lc[le - 1]) && rc[re - 1].children.length)) {
-      //console.log("CMATCH REVERSE")
-      if (isPeak(lc[le - 1]) && isPeak(rc[re - 1])) {
-        for (const a of [...rc[re - 1].attributes || []]) {
-          const name = a.name
-          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
-          if (name in rc[re - 1]) {
-            lc[le - 1][name] = rc[re - 1][name]
-            if (lc[le - 1]._props) lc[le - 1]._props[name] = rc[re - 1][name]
-          }
-        }
-        lc[le - 1]._slotsStale = true
-      }
+      copyProps(lc[le - 1], rc[re - 1])
       le-- & re--
     }
     else if (rc[rs].hasAttribute?.('key') && tags[rc[rs].tagName?.toLowerCase()]) {
-      //console.log("KEYED LOOKUP")
       const keyId = `${rc[rs].tagName}:${rc[rs].getAttribute('key')}`
       const component = keyedComponents[keyId]
       if (component) {
         const ci = lc.indexOf(component)
         if (ci >= 0 && ci !== ls) { lc.splice(ci, 1); le--; l.insertBefore(component, lc[ls]) }
-        // Snapshot old managed attributes before the copy loop overwrites
-        // the live component.
-        const oldManaged = _managedAttrs?.get(component) ?? null
-        // Always copy host-level attributes (class, etc.)
-        for (const a of [...rc[rs].attributes || []]) {
-          if (component.getAttribute(a.name) != a.value) {
-            component.setAttribute(a.name, a.value)
-          }
-        }
-        // Transfer the managed-attribute set for the next morph cycle.
-        if (_managedAttrs) {
-          const next = _managedAttrs.get(rc[rs])
-          if (next) _managedAttrs.set(component, next)
-          else _managedAttrs.delete(component)
-        }
-        for (const a of [...component.attributes || []]) {
-          if (!rc[rs].hasAttribute(a.name)) {
-            if (oldManaged && !oldManaged.has(a.name)) continue
-            component.removeAttribute(a.name)
-          }
-        }
-        // Only re-render if actual reactive props changed
-        let propsChanged = false
-        for (const a of [...rc[rs].attributes || []]) {
-          const name = a.name
-          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
-          if (name in rc[rs]) {
-            // class is managed by the parent template, not a child-reactive prop
-            if (name === 'class') continue
-            if (component[name] !== rc[rs][name]) propsChanged = true
-            component[name] = rc[rs][name]
-            if (component._props) component._props[name] = rc[rs][name]
-          }
-        }
+        syncAttrs(component, rc[rs])
+        const propsChanged = syncProps(component, rc[rs])
         if (propsChanged || component._slotsStale) {
           component.$render?.()
         } else {
@@ -836,53 +813,18 @@ export function morph(l, r, attr) {
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       render(rc[rs])
 
-      // Snapshot old managed attributes before the copy loop overwrites
-      // the live element.
-      const oldManaged = _managedAttrs?.get(lc[ls]) ?? null
-      // Always copy host-level attributes (class, etc.)
-      for (const a of [...rc[rs].attributes || []]) {
-        if (lc[ls].getAttribute(a.name) != a.value) {
-          lc[ls].setAttribute(a.name, a.value)
-          if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = a.value
-        }
-      }
-      // Transfer the managed-attribute set for the next morph cycle.
-      if (_managedAttrs) {
-        const next = _managedAttrs.get(rc[rs])
-        if (next) _managedAttrs.set(lc[ls], next)
-        else _managedAttrs.delete(lc[ls])
-      }
-      for (const a of [...lc[ls].attributes || []]) {
-        if (!rc[rs].hasAttribute(a.name)) {
-          if (oldManaged && !oldManaged.has(a.name)) continue
-          lc[ls].removeAttribute(a.name)
-          if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = false
-        }
-      }
-
       if (isPeak(lc[ls])) {
-        let propsChanged = false
-        for (const a of [...rc[rs].attributes || []]) {
-          const name = a.name
-          if (name === 'x-scope' || name === 'key' || name.startsWith('x-')) continue
-          if (name in rc[rs]) {
-            // class is managed by the parent template, not a child-reactive prop
-            if (name === 'class') continue
-            if (lc[ls][name] !== rc[rs][name]) propsChanged = true
-            lc[ls][name] = rc[rs][name]
-            if (lc[ls]._props) lc[ls]._props[name] = rc[rs][name]
-          }
-        }
+        syncAttrs(lc[ls], rc[rs], true)
+        const propsChanged = syncProps(lc[ls], rc[rs])
+        morph(lc[ls], rc[rs])
+        lc[ls]._slotsStale = true
         if (propsChanged || lc[ls]._slotsStale) {
-          morph(lc[ls], rc[rs])
-          lc[ls]._slotsStale = true
           lc[ls].$render()
         } else {
-          morph(lc[ls], rc[rs])
-          lc[ls]._slotsStale = true
           if (lc[ls]._hasSlots) lc[ls].$render()
         }
       } else {
+        syncAttrs(lc[ls], rc[rs], true)
         morph(lc[ls], rc[rs])
       }
       ls++
