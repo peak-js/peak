@@ -1,0 +1,9 @@
+<!doctype html><body>
+<div id="app"></div>
+<script type="module">
+import { component } from './peak.js'
+const t = `<template><div><div id="assign-render-count" x-text="this.items[0].val"></div><button id="assign-trigger" @click="this.doAssign()">Object.assign same</button></div></template><script>export default class { initialize() { this.items=[{id:'a',val:1}]; this._count=0; const proto=Object.getPrototypeOf(this); const orig=proto.$render.bind(this); this.$render=function(){this._count++;window._t2Count=this._count;console.log('RENDER',this._count);return orig()} } doAssign() { console.log('DO ASSIGN'); if(!this._done){this._done=true; Object.assign(this.items[0],{val:1})} } }<\/script>`
+await component('x-debug', t)
+document.getElementById('app').innerHTML = '<x-debug></x-debug>'
+</script>
+</body></html>

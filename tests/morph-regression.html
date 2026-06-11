@@ -12,6 +12,7 @@
 <div id="test5"></div>
 <div id="test6"></div>
 <div id="test7"></div>
+<div id="test8"></div>
 <script type="module">
 import { component, observable } from './peak.js'
 window._observable = observable
@@ -170,6 +171,16 @@ document.getElementById('test6').innerHTML = '<x-test6></x-test6>'
 const t7 = `<template><div id="attr-removal-container"><template x-if="this.showAttr"><x-kc key="removal-test" data-remove-me="present"></x-kc></template><template x-if="!this.showAttr"><x-kc key="removal-test"></x-kc></template><button id="toggle-attr-removal" @click="this.showAttr=!this.showAttr;this.$render()">Toggle attr</button></div></template><script>export default class { initialize() { this.showAttr=true } }<\/script>`
 await component('x-test7', t7)
 document.getElementById('test7').innerHTML = '<x-test7></x-test7>'
+
+// -------------------------------------------------------------------
+// Test 8 — : and @ directive attributes don't leak into DOM
+// Old code: :active="this.isActive" and @click="..." stayed as
+// physical attributes on the rendered element.
+// Fix:   removeAttribute() in _render() after processing.
+// -------------------------------------------------------------------
+const t8 = `<template><div><div id="directive-free" :class="'leak-test-'+(this.n||0)" @click="this.n=(this.n||0)+1" x-text="this.n||'click me'"></div></div></template><script>export default class { initialize() { this.n=0 } }<\/script>`
+await component('x-test8', t8)
+document.getElementById('test8').innerHTML = '<x-test8></x-test8>'
 
 </script>
 </body>

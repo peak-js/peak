@@ -253,3 +253,29 @@ test('attributes are removed from keyed components when parent stops setting the
   // persists on the live DOM element.
   await expect(kid).not.toHaveAttribute('data-remove-me')
 })
+
+// ---------------------------------------------------------------------------
+// : and @ directive attributes must not leak into the DOM
+//
+// Old behaviour: :active and @click stayed as physical attributes on
+// rendered elements, visible in dev tools and included in outerHTML.
+//
+// Fix: _render() now calls el.removeAttribute(a.name) after processing
+// : and @ directives, keeping only the resolved attribute in the DOM.
+// ---------------------------------------------------------------------------
+test('colon and at-prefixed directive attributes are not in the DOM', async ({ page }) => {
+  await page.goto('/morph-regression.html')
+  await page.waitForSelector('#directive-free', { timeout: 5000 })
+
+  const el = page.locator('#directive-free')
+  await expect(el).toHaveText('click me')
+
+  // Neither the :class nor @click directive attribute should be visible
+  await expect(el).not.toHaveAttribute(':class')
+  await expect(el).not.toHaveAttribute('@click')
+
+  // But the resolved attribute and event handler should work
+  await expect(el).toHaveClass(/leak-test-0/)
+  await el.click()
+  await expect(el).toHaveText('1')
+})

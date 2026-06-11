@@ -579,10 +579,14 @@ function render(template, ctx, locals) {
           el._pending ||= {}
           el._pending[name] = value
         }
+        // Remove the template-directive attribute from the DOM so only
+        // the resolved attribute remains visible in dev tools.
+        el.removeAttribute(a.name)
       }
       else if (a.name.startsWith('@')) {
         const eventName = a.name.slice(1)
         listen(eventName, el, ctx, locals)
+        el.removeAttribute(a.name)
       }
     }
     // Track which attribute names the template explicitly manages,
@@ -593,7 +597,8 @@ function render(template, ctx, locals) {
         if (a.name.startsWith('@') || a.name.startsWith('x-') || a.name === 'data-peak-attrs') continue
         managedAttrs.push(a.name.startsWith(':') ? a.name.replace(/^:/, '') : a.name)
       }
-      el.setAttribute('data-peak-attrs', managedAttrs.join(' '))
+      _managedAttrs || (_managedAttrs = new WeakMap())
+      _managedAttrs.set(el, new Set(managedAttrs))
     }
 
     const moribund = []
@@ -607,8 +612,17 @@ function render(template, ctx, locals) {
   return _render(root, {})
 }
 
+let _eventExprs
+let _managedAttrs
+
 function listen(eventType, el, ctx, locals) {
   contexts.set(el, { ctx, locals })
+  // Snapshot the handler expression so we can strip the @-attribute
+  // from the DOM without breaking event delegation.
+  _eventExprs || (_eventExprs = new WeakMap())
+  let map = _eventExprs.get(el)
+  if (!map) _eventExprs.set(el, map = {})
+  map[eventType] = el.getAttribute(`@${eventType}`)
   if (handlers[eventType]) return
   const handler = (e) => handleEvent(e, eventType)
   handlers[eventType] = true
@@ -648,7 +662,9 @@ function handleEvent(event, eventType) {
 
   while (target && target !== document) {
     const entry = contexts.get(target)
-    let value = target.getAttribute(`@${eventType}`)
+    // Read from the stored snapshot first; fall back to DOM attribute
+    // for SSR-hydrated or externally-attached handlers.
+    let value = (_eventExprs?.get(target) || {})[eventType] ?? target.getAttribute(`@${eventType}`)
 
     if (value) {
       const ctx = entry?.ctx
@@ -677,7 +693,7 @@ export function morph(l, r, attr) {
   const content = e => {
     if (e.nodeType == 3) return e.textContent
     if (isPeak(e)) {
-      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope' && x.name != 'data-peak-attrs').map(x => `${x.name}=${x.value}`).join(' ')} />`
+      return `<${e.tagName} ${[...e.attributes].filter(x => x.name != 'x-scope' && !x.name.startsWith(':') && !x.name.startsWith('@')).map(x => `${x.name}=${x.value}`).join(' ')} />`
     }
     return e.outerHTML
   }
@@ -688,23 +704,26 @@ export function morph(l, r, attr) {
 
   if (attr) {
     // Snapshot old managed attributes before the copy loop overwrites
-    // data-peak-attrs on the live element.  null means the element
-    // isn't peak-managed at all (e.g. a plain <input> morphed directly).
-    const oldManaged = l.hasAttribute('data-peak-attrs')
-      ? l.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-      : null
+    // the live element.  null means the element isn't peak-managed.
+    const oldManaged = _managedAttrs?.get(l) ?? null
     for (const a of [...r.attributes || []]) {
       if (l.getAttribute(a.name) != a.value) {
         l.setAttribute(a.name, a.value)
         if (isBoolAttr(l, a.name)) l[a.name] = true
       }
     }
+    // Transfer the managed-attribute set from the rendered element
+    // to the live element for the next morph cycle.
+    if (_managedAttrs) {
+      const next = _managedAttrs.get(r)
+      if (next) _managedAttrs.set(l, next)
+      else _managedAttrs.delete(l)
+    }
 
     for (const a of [...l.attributes || []]) {
       if (!r.hasAttribute(a.name)) {
         // Preserve attributes that aren't managed by peak (e.g. browser-set `open` on popovers)
-        if (a.name === 'data-peak-attrs') continue
-        if (oldManaged !== null && !oldManaged.includes(a.name)) continue
+        if (oldManaged && !oldManaged.has(a.name)) continue
         l.removeAttribute(a.name)
         if (isBoolAttr(l, a.name)) l[a.name] = false
       }
@@ -769,20 +788,23 @@ export function morph(l, r, attr) {
         const ci = lc.indexOf(component)
         if (ci >= 0 && ci !== ls) { lc.splice(ci, 1); le--; l.insertBefore(component, lc[ls]) }
         // Snapshot old managed attributes before the copy loop overwrites
-        // data-peak-attrs on the live component.
-        const oldManaged = component.hasAttribute('data-peak-attrs')
-          ? component.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-          : null
+        // the live component.
+        const oldManaged = _managedAttrs?.get(component) ?? null
         // Always copy host-level attributes (class, etc.)
         for (const a of [...rc[rs].attributes || []]) {
           if (component.getAttribute(a.name) != a.value) {
             component.setAttribute(a.name, a.value)
           }
         }
+        // Transfer the managed-attribute set for the next morph cycle.
+        if (_managedAttrs) {
+          const next = _managedAttrs.get(rc[rs])
+          if (next) _managedAttrs.set(component, next)
+          else _managedAttrs.delete(component)
+        }
         for (const a of [...component.attributes || []]) {
           if (!rc[rs].hasAttribute(a.name)) {
-            if (a.name === 'data-peak-attrs') continue
-            if (oldManaged !== null && !oldManaged.includes(a.name)) continue
+            if (oldManaged && !oldManaged.has(a.name)) continue
             component.removeAttribute(a.name)
           }
         }
@@ -815,10 +837,8 @@ export function morph(l, r, attr) {
       render(rc[rs])
 
       // Snapshot old managed attributes before the copy loop overwrites
-      // data-peak-attrs on the live element.
-      const oldManaged = lc[ls].hasAttribute('data-peak-attrs')
-        ? lc[ls].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-        : null
+      // the live element.
+      const oldManaged = _managedAttrs?.get(lc[ls]) ?? null
       // Always copy host-level attributes (class, etc.)
       for (const a of [...rc[rs].attributes || []]) {
         if (lc[ls].getAttribute(a.name) != a.value) {
@@ -826,10 +846,15 @@ export function morph(l, r, attr) {
           if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = a.value
         }
       }
+      // Transfer the managed-attribute set for the next morph cycle.
+      if (_managedAttrs) {
+        const next = _managedAttrs.get(rc[rs])
+        if (next) _managedAttrs.set(lc[ls], next)
+        else _managedAttrs.delete(lc[ls])
+      }
       for (const a of [...lc[ls].attributes || []]) {
         if (!rc[rs].hasAttribute(a.name)) {
-          if (a.name === 'data-peak-attrs') continue
-          if (oldManaged !== null && !oldManaged.includes(a.name)) continue
+          if (oldManaged && !oldManaged.has(a.name)) continue
           lc[ls].removeAttribute(a.name)
           if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = false
         }
