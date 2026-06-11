@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Peak.js — Morph Regression Tests</title>
+</head>
+<body>
+<div id="test1"></div>
+<div id="test2"></div>
+<div id="test3"></div>
+<div id="test4"></div>
+<div id="test5"></div>
+<div id="test6"></div>
+<div id="test7"></div>
+<script type="module">
+import { component, observable } from './peak.js'
+window._observable = observable
+
+// -------------------------------------------------------------------
+// Shared render-counter child used by multiple tests.
+// Overrides the prototype $render so synchronous calls during the
+// parent morph are counted.  Deferred rAF renders fire later and
+// are outside the test measurement window.
+// -------------------------------------------------------------------
+await component('x-render-counter', `
+<template><div class="rc-child"><span class="label" x-text="this.data?.label||''"></span><span class="count" x-text="this.local"></span><button class="inc" @click="this.local++">+</button></div></template>
+<script>
+export default class {
+  initialize() {
+    this.data = this.$prop('data')
+    this.local = 0
+    // Also expose a plain reactive array property for proxy-stability tests
+    this.items = []
+    const proto = Object.getPrototypeOf(this)
+    const orig = proto.$render.bind(this)
+    this.$render = function() {
+      window._rcRenders = (window._rcRenders || 0) + 1
+      return orig()
+    }
+  }
+}
+<\/script>`)
+
+// -------------------------------------------------------------------
+// Test 1 — Bug #1, #2: same-value reactive set is silent
+// Old code: setter fires notify unconditionally, schedules a
+// deferred $render even when the value hasn't changed.
+// Fix:   setter returns early when this._state[prop] === val
+//        or this._props[attr] === v.
+// -------------------------------------------------------------------
+const t1 = `<template><div><div id="render-val" x-text="this.data"></div><button id="set-same" @click="this.data=this.data">Set same</button><button id="set-new" @click="this.data='UPDATED'">Set new</button></div></template><script>export default class { initialize() { this.data='init'; const proto=Object.getPrototypeOf(this); const orig=proto.$render.bind(this); let n=0; this.$render=function(){window._t1Renders=++n;return orig()} } }<\/script>`
+await component('x-test1', t1)
+document.getElementById('test1').innerHTML = '<x-test1></x-test1>'
+
+// -------------------------------------------------------------------
+// Test 2 — Bug #1: Object.assign on observable doesn't infinite-loop
+// Old code: every Object.assign(msg, {_groupStart:...}) on an
+// observable proxy fires the set trap → notify() → $defer() →
+// rAF → $render() → Object.assign again → infinite loop.
+// Fix:   set trap checks if x[key] === value before notify().
+// -------------------------------------------------------------------
+const t2 = `<template><div><div id="assign-render-count" x-text="this.items[0].val"></div><button id="assign-trigger" @click="this.doAssign()">Object.assign same</button></div></template><script>export default class { initialize() { this.items=[{id:'a',val:1}]; this._count=0; const proto=Object.getPrototypeOf(this); const orig=proto.$render.bind(this); this.$render=function(){this._count++;window._t2Count=this._count;return orig()} } doAssign() { if (!this._done) { this._done=true; Object.assign(this.items[0],{val:1}); } } }<\/script>`
+await component('x-test2', t2)
+document.getElementById('test2').innerHTML = '<x-test2></x-test2>'
+
+// -------------------------------------------------------------------
+// Test 3 — Bug #3: observable proxy identity / no unnecessary child renders
+// Old code: observable() created a fresh Proxy on every property
+// access.  Two accesses to the same array element returned
+// different Proxy wrappers → propsChanged always true → child
+// $render() on every parent re-render.
+// Fix:   observable() caches Proxies via WeakMap by target object.
+// -------------------------------------------------------------------
+// Test 3 uses a plain call to observable() to verify the proxy cache.
+// Before the fix, observable() created a fresh Proxy on every call
+// with the same target, so p1 !== p2 even for the same raw object.
+// After the fix (WeakMap cache), same raw object → same Proxy.
+window._runProxyStabilityTest = function() {
+  const raw = { a: 1 }
+  const p1 = window._observable(raw)
+  const p2 = window._observable(raw)
+  return p1 === p2
+}
+const t3 = `<template><div><template x-for="item in this.items"><x-render-counter :key="item.id" :data="item"></x-render-counter></template></div></template><script>export default class { initialize() { this.items=[{id:'a',label:'Alpha'},{id:'b',label:'Beta'}] } }<\/script>`
+await component('x-test3', t3)
+document.getElementById('test3').innerHTML = '<x-test3></x-test3>'
+
+// -------------------------------------------------------------------
+// Test 4 — Bug #5: keyed branch missing ls++ causes REPLACE
+// Old code: keyed branch incremented rs but never ls.  The while
+// loop's next iteration re-examined the SAME lc[ls] against the
+// next rc[rs].  Mismatch → REPLACE → DOM element destroyed.
+// Fix:   ls++ after rs++ in the keyed branch.
+//
+// Setup: 2 keyed peak components with a non-keyed <span> between.
+// Upon reorder (swap the keyed items), the span must survive.
+// -------------------------------------------------------------------
+await component('x-kc', `
+<template><div class="kc"><span class="kid-label" x-text="this.label"></span><button class="kc-inc" @click="this.n++">+</button><span class="kc-n" x-text="this.n"></span></div></template>
+<script>
+export default class {
+  initialize() { this.label=this.$prop('label'); this.n=0 }
+}
+<\/script>`)
+
+const t4 = `<template><div id="kc-container"><x-kc :key="this.items[0].key" :label="this.items[0].label" :class="this.items[0].cls||''"></x-kc><span id="plain-marker">PLAIN</span><x-kc :key="this.items[1].key" :label="this.items[1].label" :class="this.items[1].cls||''"></x-kc><button id="swap-kc" @click="this.swap()">Swap keyed</button></div></template><script>export default class { initialize() { this.items=[{key:'a',label:'First'},{key:'b',label:'Second'}] } swap() { const [a,b]=this.items; this.items=[{...b,cls:'swapped'},{...a,cls:'swapped'}]; this.$render() } }<\/script>`
+await component('x-test4', t4)
+document.getElementById('test4').innerHTML = '<x-test4></x-test4>'
+
+// -------------------------------------------------------------------
+// Test 5 — Bugs #7, #8: class change doesn't trigger child $render
+// Old code: attribute-copy loop set propsChanged=true for ANY
+// attribute difference including `class`.  Non-slot children
+// called $render() unconditionally in the compat `else` branch.
+// Fix:   class excluded from propsChanged; else branch only calls
+//        $render() for _hasSlots components.
+// -------------------------------------------------------------------
+await component('x-noslot', `
+<template><div class="noslot"><span class="label" x-text="this.data?.label"></span></div></template>
+<script>
+export default class {
+  initialize() {
+    this.data = this.$prop('data')
+    const proto = Object.getPrototypeOf(this)
+    const orig = proto.$render.bind(this)
+    let n = 0
+    this.$render = function() { window._noslotRenders = ++n; return orig() }
+  }
+}
+<\/script>`)
+
+const t5 = `<template><div><x-noslot :key="'ns'" :data="this.item" :class="this.active?'active':''"></x-noslot><button id="toggle-class" @click="this.active=!this.active;this.$render()">Toggle class</button><button id="change-data" @click="this.item={label:'NEW'};this.$render()">Change data</button></div></template><script>export default class { initialize() { this.item={label:'Hello'}; this.active=false } }<\/script>`
+await component('x-test5', t5)
+document.getElementById('test5').innerHTML = '<x-test5></x-test5>'
+
+// -------------------------------------------------------------------
+// Test 6 — Bug #9: slot components DO re-render for slot re-projection
+// (Keep the existing slot test but instrument it so we verify
+// that a render actually occurred on the slot child.)
+// -------------------------------------------------------------------
+await component('x-slot-child', '/components/x-slot-child.html')
+
+// NOTE: we override $render in initialize() to capture the framework's
+// original $render BEFORE the user prototype is copied.  Defining $render
+// as a class method would replace the framework's $render on the prototype
+// and cause infinite recursion when calling Object.getPrototypeOf(this).$render.
+await component('x-slot-instrumented', `
+<template><div><slot></slot><span class="slot-render-n" x-text="this._n"></span></div></template>
+<script>
+export default class {
+  initialize() {
+    this._n = 0
+    const orig = Object.getPrototypeOf(this).$render.bind(this)
+    this.$render = function() { this._n++; window._slotRenders = this._n; return orig() }
+  }
+}
+<\/script>`)
+
+const t6 = `<template><div><x-slot-instrumented><span class="marker" x-if="this.showA">A</span><span class="marker" x-if="!this.showA">B</span></x-slot-instrumented><button id="toggle-slot" @click="this.showA=!this.showA;this.$render()">Toggle slot</button></div></template><script>export default class { initialize() { this.showA=true } }<\/script>`
+await component('x-test6', t6)
+document.getElementById('test6').innerHTML = '<x-test6></x-test6>'
+
+// -------------------------------------------------------------------
+// Test 7 — Keyed branch attribute removal
+// Old code: second attribute loop in keyed branch iterates
+// rc[rs].attributes instead of component.attributes, so
+// attributes are never removed from keyed components.
+// Fix:   iterate component.attributes to find stale attrs.
+// -------------------------------------------------------------------
+const t7 = `<template><div id="attr-removal-container"><template x-if="this.showAttr"><x-kc key="removal-test" data-remove-me="present"></x-kc></template><template x-if="!this.showAttr"><x-kc key="removal-test"></x-kc></template><button id="toggle-attr-removal" @click="this.showAttr=!this.showAttr;this.$render()">Toggle attr</button></div></template><script>export default class { initialize() { this.showAttr=true } }<\/script>`
+await component('x-test7', t7)
+document.getElementById('test7').innerHTML = '<x-test7></x-test7>'
+
+</script>
+</body>
+</html>

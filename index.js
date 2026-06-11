@@ -687,6 +687,12 @@ export function morph(l, r, attr) {
   const render = e => isPeak(e) && customElements.upgrade(e) || e.$render?.()
 
   if (attr) {
+    // Snapshot old managed attributes before the copy loop overwrites
+    // data-peak-attrs on the live element.  null means the element
+    // isn't peak-managed at all (e.g. a plain <input> morphed directly).
+    const oldManaged = l.hasAttribute('data-peak-attrs')
+      ? l.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+      : null
     for (const a of [...r.attributes || []]) {
       if (l.getAttribute(a.name) != a.value) {
         l.setAttribute(a.name, a.value)
@@ -698,10 +704,7 @@ export function morph(l, r, attr) {
       if (!r.hasAttribute(a.name)) {
         // Preserve attributes that aren't managed by peak (e.g. browser-set `open` on popovers)
         if (a.name === 'data-peak-attrs') continue
-        if (r.hasAttribute('data-peak-attrs')) {
-          const managedAttrs = r.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-          if (!managedAttrs.includes(a.name)) continue
-        }
+        if (oldManaged !== null && !oldManaged.includes(a.name)) continue
         l.removeAttribute(a.name)
         if (isBoolAttr(l, a.name)) l[a.name] = false
       }
@@ -765,19 +768,21 @@ export function morph(l, r, attr) {
       if (component) {
         const ci = lc.indexOf(component)
         if (ci >= 0 && ci !== ls) { lc.splice(ci, 1); le--; l.insertBefore(component, lc[ls]) }
+        // Snapshot old managed attributes before the copy loop overwrites
+        // data-peak-attrs on the live component.
+        const oldManaged = component.hasAttribute('data-peak-attrs')
+          ? component.getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+          : null
         // Always copy host-level attributes (class, etc.)
         for (const a of [...rc[rs].attributes || []]) {
           if (component.getAttribute(a.name) != a.value) {
             component.setAttribute(a.name, a.value)
           }
         }
-        for (const a of [...rc[rs].attributes || []]) {
+        for (const a of [...component.attributes || []]) {
           if (!rc[rs].hasAttribute(a.name)) {
             if (a.name === 'data-peak-attrs') continue
-            if (rc[rs].hasAttribute('data-peak-attrs')) {
-              const managedAttrs = rc[rs].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-              if (!managedAttrs.includes(a.name)) continue
-            }
+            if (oldManaged !== null && !oldManaged.includes(a.name)) continue
             component.removeAttribute(a.name)
           }
         }
@@ -809,6 +814,11 @@ export function morph(l, r, attr) {
     else if (lc[ls] && rc[rs].children && compat(lc[ls]) == compat(rc[rs])) {
       render(rc[rs])
 
+      // Snapshot old managed attributes before the copy loop overwrites
+      // data-peak-attrs on the live element.
+      const oldManaged = lc[ls].hasAttribute('data-peak-attrs')
+        ? lc[ls].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
+        : null
       // Always copy host-level attributes (class, etc.)
       for (const a of [...rc[rs].attributes || []]) {
         if (lc[ls].getAttribute(a.name) != a.value) {
@@ -819,10 +829,7 @@ export function morph(l, r, attr) {
       for (const a of [...lc[ls].attributes || []]) {
         if (!rc[rs].hasAttribute(a.name)) {
           if (a.name === 'data-peak-attrs') continue
-          if (rc[rs].hasAttribute('data-peak-attrs')) {
-            const managedAttrs = rc[rs].getAttribute('data-peak-attrs').split(' ').filter(Boolean)
-            if (!managedAttrs.includes(a.name)) continue
-          }
+          if (oldManaged !== null && !oldManaged.includes(a.name)) continue
           lc[ls].removeAttribute(a.name)
           if (isBoolAttr(lc[ls], a.name)) lc[ls][a.name] = false
         }
